@@ -1,0 +1,7 @@
+.vscode/
+.xmake/
+.cache/
+build/
+vsxmake2022/
+Resources/Skybox/*
+Config/config.h

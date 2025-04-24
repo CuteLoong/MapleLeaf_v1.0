@@ -1,0 +1,37 @@
+target("Core")
+    set_kind("static")
+    add_files(
+    "Devices/*.cpp", 
+    "Utils/*.cpp", 
+    "Maths/*.cpp", 
+    "Engine/*.cpp", 
+    "Graphics/*.cpp", 
+    "Graphics/Instance/*.cpp", 
+    "Graphics/Devices/*.cpp", 
+    "Graphics/Swapchain/*.cpp", 
+    "Graphics/Resources/*.cpp", 
+    "Graphics/Renderer/*.cpp", 
+    "Graphics/Commands/*.cpp", 
+    "Graphics/Descriptors/*.cpp", 
+    "Graphics/Pipelines/*.cpp", 
+    "Graphics/AccelerationStruct/*.cpp", 
+    "Files/*.cpp", 
+    "Models/*.cpp", 
+    "Materials/*.cpp", 
+    "Resources/*.cpp", 
+    "Meshes/*.cpp", 
+    "Scenes/*.cpp", 
+    "Scenes/Light/*.cpp", 
+    "Scenes/Shadow/*.cpp", 
+    "Scenes/Skybox/*.cpp", 
+    "Scenes/Animation/*.cpp",
+    "Importers/*.cpp", 
+    "Importers/Builder/*.cpp",
+    "Bitmaps/*.cpp",
+    "Inputs/*.cpp",
+    "Imgui/*.cpp",
+    "Utils/SampleGenerators/*.cpp",
+    "DerivedScene/ASScene/*.cpp",
+    "DerivedScene/GPUScene/*.cpp"
+    )
+target_end()

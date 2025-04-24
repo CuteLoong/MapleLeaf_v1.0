@@ -1,0 +1,14 @@
+target("RenderPass")
+    set_kind("static")
+    add_files(
+    "Skybox/*.cpp",
+    "GBuffer/*.cpp",
+    "Shadow/*.cpp",
+    "Deferred/*.cpp",
+    "Imgui/*.cpp",
+    "Default/*.cpp",
+    "SkyboxMapping/*.cpp",
+    "Resolved/*.cpp",
+    "ToneMapping/*.cpp"
+    )
+target_end()
