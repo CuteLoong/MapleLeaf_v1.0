@@ -9,7 +9,7 @@ This is a simplified version of the MapleLeaf rendering engine, focused on basic
 
 ## Build MapleLeaf
 ``` shell
-git clone https://github.com/CuteLoong/MapleLeaf.git
+git clone https://github.com/CuteLoong/MapleLeaf_v1.0.git
 xmake f -m release[/debug]
 xmake
 
