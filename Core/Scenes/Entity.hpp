@@ -2,7 +2,7 @@
 
 #include "Component.hpp"
 #include "NonCopyable.hpp"
-
+#include <unordered_map>
 
 namespace MapleLeaf {
 class Entity final : NonCopyable
@@ -148,6 +148,49 @@ public:
      */
     const std::vector<Entity*>& GetChildren() const { return children; }
 
+    /**
+     * @brief Set a flag on this entity.
+     * @param flagName The name of the flag.
+     * @param value The value to set (true or false).
+     */
+    void SetFlag(const std::string& flagName, bool value) { flags[flagName] = value; }
+
+    /**
+     * @brief Check if a flag exists on this entity.
+     * @param flagName The name of the flag.
+     * @return Whether the flag exists.
+     */
+    bool HasFlag(const std::string& flagName) const { return flags.find(flagName) != flags.end(); }
+
+    /**
+     * @brief Get the value of a flag.
+     * @param flagName The name of the flag.
+     * @param defaultValue The default value if the flag doesn't exist.
+     * @return The flag value, or defaultValue if the flag doesn't exist.
+     */
+    bool GetFlag(const std::string& flagName, bool defaultValue = false) const
+    {
+        auto it = flags.find(flagName);
+        return (it != flags.end()) ? it->second : defaultValue;
+    }
+
+    /**
+     * @brief Remove a flag from this entity.
+     * @param flagName The name of the flag to remove.
+     */
+    void RemoveFlag(const std::string& flagName) { flags.erase(flagName); }
+
+    /**
+     * @brief Clear all flags from this entity.
+     */
+    void ClearFlags() { flags.clear(); }
+
+    /**
+     * @brief Get all flags as a const reference.
+     * @return The flags map.
+     */
+    const std::unordered_map<std::string, bool>& GetFlags() const { return flags; }
+
 private:
     /**
      * @brief Remove the child entity from this entity.
@@ -167,5 +210,7 @@ private:
 
     Entity*              parent = nullptr;
     std::vector<Entity*> children;
+    
+    std::unordered_map<std::string, bool> flags;  // 存储实体的标志列表
 };
 }   // namespace MapleLeaf
