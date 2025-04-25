@@ -46,6 +46,12 @@ public:
             auto entity = CreateEntity();
             entity->SetName(node.name);
 
+            if (node.flags.size() > 0) {
+                for (const auto& flag : node.flags) {
+                    entity->SetFlag(flag, true);
+                }
+            }
+
             if (node.parent.isValid()) {
                 const auto& parent = builder.sceneGraph[node.parent.get()];
                 entity->SetParent(GetEntity(parent.name));

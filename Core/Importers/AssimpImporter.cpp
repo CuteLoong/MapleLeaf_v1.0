@@ -266,9 +266,20 @@ void AssimpImporter<T>::ParseNode(ImporterData& data, const aiNode* pCurrent, bo
     if (!node.meshes.empty()) std::copy(pCurrent->mMeshes, pCurrent->mMeshes + pCurrent->mNumMeshes, node.meshes.data());
 
     // Area lights, attribute "isAreaLight" defined in GLTF2
-    if (pCurrent->mMetaData && pCurrent->mMetaData->HasKey("isAreaLight")) {
-        bool isAreaLight = false;
-        if (pCurrent->mMetaData->Get("isAreaLight", isAreaLight); isAreaLight == true) data.areaLights.push_back(pCurrent);
+    if (pCurrent->mMetaData) {
+        for (unsigned int i = 0; i < pCurrent->mMetaData->mNumProperties; i++) {
+            const aiString&   key    = pCurrent->mMetaData->mKeys[i];
+            const std::string keyStr = key.C_Str();
+
+            node.flags.push_back(keyStr);
+
+            if (keyStr == "isAreaLight") {
+                bool isAreaLight = false;
+                if (pCurrent->mMetaData->Get("isAreaLight", isAreaLight); isAreaLight == true) {
+                    data.areaLights.push_back(pCurrent);
+                }
+            }
+        }
     }
 
     data.AddAiNode(pCurrent, data.builder.AddSceneNode(std::move(node)));

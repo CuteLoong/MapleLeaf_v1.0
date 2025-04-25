@@ -46,6 +46,8 @@ public:
         return {instanceData.indexCount, 1, instanceData.indexOffset, int(instanceData.vertexOffset), instanceData.instanceID};
     }
 
+    bool HasFlag(const std::string& flagName) const;
+
 private:
     Mesh*                  mesh;   // relevant mesh
     std::shared_ptr<Model> model;

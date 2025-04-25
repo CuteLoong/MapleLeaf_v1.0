@@ -30,13 +30,12 @@ GPUInstance::GPUInstance(Mesh* mesh, uint32_t instanceID, uint32_t materialID)
     instanceData.isAreaLight     = 0;
 
     Entity* entity = mesh->GetEntity();
-    while (entity != nullptr && instanceData.isUpdate == 0) {
+    while (entity != nullptr) {
         instanceData.isUpdate = entity->GetComponent<AnimationController>() != nullptr;
         entity                = entity->GetParent();
     }
 
     if (const auto light = mesh->GetEntity()->GetComponent<Light>(); light != nullptr && light->type == LightType::Area) instanceData.isAreaLight = 1;
-
 
     if (!modelOffset.count(model)) {
         instanceData.indexOffset  = indicesArray.size();
@@ -75,5 +74,13 @@ void GPUInstance::Update()
 
         // MaterialId Update if material add? or delete
     }
+}
+
+bool GPUInstance::HasFlag(const std::string& flagName) const
+{
+    if (const auto& entity = mesh->GetEntity()) {
+        if (entity->HasFlag(flagName)) return true;
+    }
+    return false;
 }
 }   // namespace MapleLeaf

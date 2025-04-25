@@ -210,7 +210,7 @@ private:
 
     Entity*              parent = nullptr;
     std::vector<Entity*> children;
-    
-    std::unordered_map<std::string, bool> flags;  // 存储实体的标志列表
+
+    std::unordered_map<std::string, bool> flags = {};
 };
 }   // namespace MapleLeaf

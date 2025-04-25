@@ -42,11 +42,12 @@ class SceneNode
 public:
     SceneNode() = default;
 
-    std::string           name;
-    Transform*            transform;   // auto free by unique_ptr in component
-    NodeID                parent;
-    std::vector<NodeID>   children;
-    std::vector<uint32_t> meshes;
+    std::string              name;
+    Transform*               transform;   // auto free by unique_ptr in component
+    NodeID                   parent;
+    std::vector<NodeID>      children;
+    std::vector<uint32_t>    meshes;
+    std::vector<std::string> flags;
 };
 
 using SceneGraph = std::vector<SceneNode>;
