@@ -14,6 +14,15 @@ void StorageBuffer::Update(const void* newData)
     UnmapMemory();
 }
 
+void StorageBuffer::Update(const void* newData, VkDeviceSize size)
+{
+    void* data = nullptr;
+    MapMemory(&data);
+    std::memcpy(data, newData, size);
+    FlushMappedMemory(size);
+    UnmapMemory();
+}
+
 WriteDescriptorSet StorageBuffer::GetWriteDescriptor(uint32_t binding, VkDescriptorType descriptorType,
                                                      const std::optional<OffsetSize>& offsetSize) const
 {
@@ -31,7 +40,7 @@ WriteDescriptorSet StorageBuffer::GetWriteDescriptor(uint32_t binding, VkDescrip
     descriptorWrite.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptorWrite.dstSet               = VK_NULL_HANDLE;   // Will be set in the descriptor handler.
     descriptorWrite.dstBinding           = binding;
-    descriptorWrite.dstArrayElement      = 0;                // Will be set in the descriptor handler.
+    descriptorWrite.dstArrayElement      = 0;   // Will be set in the descriptor handler.
     descriptorWrite.descriptorCount      = 1;
     descriptorWrite.descriptorType       = descriptorType;
 

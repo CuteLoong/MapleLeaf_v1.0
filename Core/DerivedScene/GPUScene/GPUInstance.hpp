@@ -37,16 +37,20 @@ public:
 
     explicit GPUInstance(Mesh* mesh, uint32_t instanceID, uint32_t materialID);
 
-    void         Update();
+    void Update();
+
+    uint32_t     GetInstanceID() const { return instanceData.instanceID; }
     Status       GetInstanceStatus() const { return instanceStatus; }
     InstanceData GetInstanceData() const { return instanceData; }
+    Mesh*        GetMesh() const { return mesh; }
 
     VkDrawIndexedIndirectCommand GetDrawIndexedIndirectCommand() const
     {
         return {instanceData.indexCount, 1, instanceData.indexOffset, int(instanceData.vertexOffset), instanceData.instanceID};
     }
 
-    bool HasFlag(const std::string& flagName) const;
+    bool    HasFlag(const std::string& flagName) const;
+    Entity* ParentsHasFlagEntity(const std::string& flagName) const;
 
 private:
     Mesh*                  mesh;   // relevant mesh

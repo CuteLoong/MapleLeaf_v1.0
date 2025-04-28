@@ -12,7 +12,7 @@ std::vector<uint32_t>                                                     GPUIns
 
 GPUInstance::GPUInstance(Mesh* mesh, uint32_t instanceID, uint32_t materialID)
     : mesh(mesh)
-    , instanceStatus(Status::None)
+    , instanceStatus(Status::ModelChanged)
 {
     model = mesh->GetModel();
 
@@ -53,6 +53,8 @@ GPUInstance::GPUInstance(Mesh* mesh, uint32_t instanceID, uint32_t materialID)
 
 void GPUInstance::Update()
 {
+    instanceStatus = Status::None;
+
     if (mesh->GetEntity()->GetComponent<Transform>()->GetUpdateStatus() == Transform::UpdateStatus::Transformation) {
         instanceStatus               = Status::MatrixChanged;
         instanceData.modelMatrix     = mesh->GetEntity()->GetComponent<Transform>()->GetWorldMatrix();
@@ -82,5 +84,16 @@ bool GPUInstance::HasFlag(const std::string& flagName) const
         if (entity->HasFlag(flagName)) return true;
     }
     return false;
+}
+
+Entity* GPUInstance::ParentsHasFlagEntity(const std::string& flagName) const
+{
+    if (auto* entity = mesh->GetEntity()) {
+        while (entity != nullptr) {
+            if (entity->HasFlag(flagName)) return entity;
+            entity = entity->GetParent();
+        }
+    }
+    return nullptr;
 }
 }   // namespace MapleLeaf

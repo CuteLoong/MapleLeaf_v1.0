@@ -25,10 +25,10 @@ void ToneMappingSubrender::RegisterImGui()
             ImGui::SliderFloat("Gamma", &toneMappingInfo.gamma, 0.0f, 10.0f);
 
             ImGui::SetNextItemWidth(200.0f);
-            ImGui::SliderFloat("whiteMaxLuminance", &toneMappingInfo.whiteMaxLuminance, 0.0f, 10.0f);
+            ImGui::SliderFloat("WhiteMaxLuminance", &toneMappingInfo.whiteMaxLuminance, 0.0f, 10.0f);
 
             ImGui::SetNextItemWidth(200.0f);
-            ImGui::SliderFloat("whiteScale", &toneMappingInfo.whiteScale, 0.0f, 100.0f);
+            ImGui::SliderFloat("WhiteScale", &toneMappingInfo.whiteScale, 0.0f, 100.0f);
 
             // Add tone mapping type dropdown
             ImGui::SetNextItemWidth(150.0f);

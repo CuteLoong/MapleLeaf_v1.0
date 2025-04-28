@@ -51,78 +51,54 @@ void GPUScene::Start()
     drawCullingIndirectBuffer = std::make_unique<IndirectBuffer>(instances.size() * sizeof(VkDrawIndexedIndirectCommand));
     drawAllMeshIndirectBuffer =
         std::make_unique<IndirectBuffer>(drawAllMeshCommands.size() * sizeof(VkDrawIndexedIndirectCommand), drawAllMeshCommands.data());
+
+    updateStatus = UpdateStatus::AllChanged;
 }
 
+// Now only instance alter, e.g. instance update but not add or remove
+// TODO UpdateMaterial and instance Add or Delete
 void GPUScene::Update()
 {
 #ifdef MAPLELEAF_GPUSCENE_DEBUG
     auto debugStart = Time::Now();
 #endif
-    // Now only instance alter, e.g. instance update but not add or remove
-    // TODO UpdateMaterial and instance Add or Delete
-
-    bool UpdateGPUScene = false;
-    bool UpdateMatrix   = false;
-    bool UpdateProxy    = false;
+    GPUInstance::Status InstanceUpdateStatus = GPUInstance::Status::None;
 
     for (uint32_t i = 0; i < instances.size(); i++) {
         GPUInstance& instance = instances[i];
         instance.Update();
-        const auto& status = instance.GetInstanceStatus();
 
-        if (status == GPUInstance::Status::ModelChanged || status == GPUInstance::Status::MatrixChanged) {
-            instancesDatas[i]      = instance.GetInstanceData();
-            drawAllMeshCommands[i] = instance.GetDrawIndexedIndirectCommand();
+        const auto& status   = instance.GetInstanceStatus();
+        InstanceUpdateStatus = std::max(InstanceUpdateStatus, status);
+
+        switch (status) {
+        case GPUInstance::Status::ModelChanged: drawAllMeshCommands[i] = instance.GetDrawIndexedIndirectCommand();
+        case GPUInstance::Status::MatrixChanged: instancesDatas[i] = instance.GetInstanceData(); break;
+        case GPUInstance::Status::None: break;
+        default: break;
         }
-
-        UpdateGPUScene |= (status == GPUInstance::Status::ModelChanged);
-        UpdateMatrix |= (status == GPUInstance::Status::MatrixChanged);
     }
 
-    if (UpdateGPUScene) {
+    switch (InstanceUpdateStatus) {
+    case GPUInstance::Status::ModelChanged:
         SetIndices(GPUInstance::indicesArray);
         SetVertices(GPUInstance::verticesArray);
+        instancesBuffer->Update(instancesDatas.data(), sizeof(GPUInstance::InstanceData) * instancesDatas.size());
+        materialsBuffer->Update(materialsDatas.data(), sizeof(GPUMaterial::MaterialData) * materialsDatas.size());
+        drawCullingIndirectBuffer->Update(drawAllMeshCommands.data(), drawAllMeshCommands.size() * sizeof(VkDrawIndexedIndirectCommand));
+        drawAllMeshIndirectBuffer->Update(drawAllMeshCommands.data(), drawAllMeshCommands.size() * sizeof(VkDrawIndexedIndirectCommand));
+        updateStatus = UpdateStatus::AllChanged;
+        break;
+    case GPUInstance::Status::MatrixChanged:
+        instancesBuffer->Update(instancesDatas.data(), sizeof(GPUInstance::InstanceData) * instancesDatas.size());
+        materialsBuffer->Update(materialsDatas.data(), sizeof(GPUMaterial::MaterialData) * materialsDatas.size());
+        updateStatus = UpdateStatus::InstanceChanged;
+        break;
+    case GPUInstance::Status::None: updateStatus = UpdateStatus::NoneChanged; break;
+    default: break;
     }
-
 #ifdef MAPLELEAF_GPUSCENE_DEBUG
-    Log::Out("Update Vertices costs: ", (Time::Now() - debugStart).AsMilliseconds<float>(), "ms\n");
-    debugStart = Time::Now();
-#endif
-    if (UpdateGPUScene) {
-        instancesBuffer = std::make_unique<StorageBuffer>(sizeof(GPUInstance::InstanceData) * instancesDatas.size(), instancesDatas.data());
-        materialsBuffer = std::make_unique<StorageBuffer>(sizeof(GPUMaterial::MaterialData) * materialsDatas.size(), materialsDatas.data());
-    }
-
-    if (UpdateMatrix) {
-        void* instanceData = nullptr;
-        void* materialData = nullptr;
-
-        instancesBuffer->MapMemory(&instanceData);
-        materialsBuffer->MapMemory(&materialData);
-
-        std::memcpy(instanceData, instancesDatas.data(), sizeof(GPUInstance::InstanceData) * instancesDatas.size());
-        std::memcpy(materialData, materialsDatas.data(), sizeof(GPUMaterial::MaterialData) * materialsDatas.size());
-
-        instancesBuffer->FlushMappedMemory();
-        materialsBuffer->FlushMappedMemory();
-
-        instancesBuffer->UnmapMemory();
-        materialsBuffer->UnmapMemory();
-    }
-
-#ifdef MAPLELEAF_GPUSCENE_DEBUG
-    Log::Out("Update StorageBuffer Data costs: ", (Time::Now() - debugStart).AsMilliseconds<float>(), "ms\n");
-    debugStart = Time::Now();
-#endif
-    // add instance need to recreate drawCullingIndirectBuffer
-    if (UpdateGPUScene) {
-        drawCullingIndirectBuffer = std::make_unique<IndirectBuffer>(instances.size() * sizeof(VkDrawIndexedIndirectCommand));
-        drawAllMeshIndirectBuffer =
-            std::make_unique<IndirectBuffer>(drawAllMeshCommands.size() * sizeof(VkDrawIndexedIndirectCommand), drawAllMeshCommands.data());
-    }
-
-#ifdef MAPLELEAF_GPUSCENE_DEBUG
-    Log::Out("Update drawCullingIndirectBuffer Data costs: ", (Time::Now() - debugStart).AsMilliseconds<float>(), "ms\n");
+    Log::Out("Update GPU Scene: ", (Time::Now() - debugStart).AsMilliseconds<float>(), "ms\n");
     debugStart = Time::Now();
 #endif
 }

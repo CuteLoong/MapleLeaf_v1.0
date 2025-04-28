@@ -10,6 +10,7 @@ public:
     explicit IndirectBuffer(VkDeviceSize size, const void* data = nullptr);
 
     void Update(const void* newData);
+    void Update(const void* newData, VkDeviceSize size);
 
     WriteDescriptorSet GetWriteDescriptor(uint32_t binding, VkDescriptorType descriptorType,
                                           const std::optional<OffsetSize>& offsetSize) const override;
