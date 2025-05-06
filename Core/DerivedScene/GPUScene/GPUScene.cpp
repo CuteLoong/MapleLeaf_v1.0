@@ -48,9 +48,9 @@ void GPUScene::Start()
     instancesBuffer = std::make_unique<StorageBuffer>(sizeof(GPUInstance::InstanceData) * instancesDatas.size(), instancesDatas.data());
     materialsBuffer = std::make_unique<StorageBuffer>(sizeof(GPUMaterial::MaterialData) * materialsDatas.size(), materialsDatas.data());
 
-    drawCullingIndirectBuffer = std::make_unique<IndirectBuffer>(instances.size() * sizeof(VkDrawIndexedIndirectCommand));
+    drawCullingIndirectBuffer = std::make_unique<IndirectBuffer>(instances.size() * sizeof(VkDrawIndexedIndirectCommand), nullptr, true);
     drawAllMeshIndirectBuffer =
-        std::make_unique<IndirectBuffer>(drawAllMeshCommands.size() * sizeof(VkDrawIndexedIndirectCommand), drawAllMeshCommands.data());
+        std::make_unique<IndirectBuffer>(drawAllMeshCommands.size() * sizeof(VkDrawIndexedIndirectCommand), drawAllMeshCommands.data(), true);
 
     updateStatus = UpdateStatus::AllChanged;
 }

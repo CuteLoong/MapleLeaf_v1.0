@@ -14,7 +14,7 @@ public:
         Normal
     };
 
-    Buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, const void* data = nullptr);
+    Buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, const void* data = nullptr, bool align = false);
     virtual ~Buffer();
 
     void MapMemory(void** data) const;

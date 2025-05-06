@@ -26,7 +26,8 @@ public:
 
     MaterialData GetMaterialData() const { return materialData; }
 
-    static std::optional<uint32_t> GetMaterialID(const std::shared_ptr<Material>& material);
+    static std::optional<uint32_t>               GetMaterialID(const std::shared_ptr<Material>& material);
+    static std::vector<std::shared_ptr<Image2d>> GetImages() { return images; }
 
 private:
     std::shared_ptr<Material> material;

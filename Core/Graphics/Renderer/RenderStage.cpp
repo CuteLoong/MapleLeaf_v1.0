@@ -1,7 +1,6 @@
 #include "RenderStage.hpp"
 #include "Devices.hpp"
 #include "Graphics.hpp"
-#include "Log.hpp"
 
 #include "config.h"
 

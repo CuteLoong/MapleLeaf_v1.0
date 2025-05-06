@@ -7,7 +7,7 @@ namespace MapleLeaf {
 class StorageBuffer : public Descriptor, public Buffer
 {
 public:
-    explicit StorageBuffer(VkDeviceSize size, const void* data = nullptr);
+    explicit StorageBuffer(VkDeviceSize size, const void* data = nullptr, bool align = false);
 
     void Update(const void* newData);
     void Update(const void* newData, VkDeviceSize size);

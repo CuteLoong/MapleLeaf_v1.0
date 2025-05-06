@@ -52,6 +52,16 @@ bool Entity::HasParent(const std::string& name) const
     return false;
 }
 
+bool Entity::HasParentContainFlag(const std::string& flagName) const
+{
+    Entity* parent = GetParent();
+    while (parent) {
+        if (parent->GetFlag(flagName)) return true;
+        parent = parent->GetParent();
+    }
+    return false;
+}
+
 void Entity::SetParent(Entity* parent)
 {
     if (this->parent) this->parent->RemoveChild(this);

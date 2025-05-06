@@ -153,8 +153,6 @@ void LogicalDevice::CreateLogicalDevice()
     else
         Log::Warning("Selected GPU does not support shaderInt64!\n");
 
-
-
     VkPhysicalDeviceShaderAtomicFloatFeaturesEXT shaderAtomicFloatFeatures = {};
     shaderAtomicFloatFeatures.sType                                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
     shaderAtomicFloatFeatures.shaderImageFloat32Atomics                    = VK_TRUE;
@@ -205,8 +203,6 @@ void LogicalDevice::CreateLogicalDevice()
     maintenance4Features.sType                                = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES;
     maintenance4Features.maintenance4                         = VK_TRUE;
     maintenance4Features.pNext                                = &indexingFeatures;
-
-
 
     deviceCreatepNextChain     = &maintenance4Features;
     extensionFeatures.sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;

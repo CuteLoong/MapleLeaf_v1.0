@@ -1,9 +1,9 @@
 #include "IndirectBuffer.hpp"
 
 namespace MapleLeaf {
-IndirectBuffer::IndirectBuffer(VkDeviceSize size, const void* data)
+IndirectBuffer::IndirectBuffer(VkDeviceSize size, const void* data, bool align)
     : Buffer(size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, data)
+             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, data, align)
 {}
 
 void IndirectBuffer::Update(const void* newData)
@@ -19,7 +19,7 @@ void IndirectBuffer::Update(const void* newData, VkDeviceSize size)
     void* data = nullptr;
     MapMemory(&data);
     std::memcpy(data, newData, size);
-    FlushMappedMemory(size);
+    FlushMappedMemory();
     UnmapMemory();
 }
 

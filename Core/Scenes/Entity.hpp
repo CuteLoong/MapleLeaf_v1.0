@@ -163,6 +163,14 @@ public:
     bool HasFlag(const std::string& flagName) const { return flags.find(flagName) != flags.end(); }
 
     /**
+     * @brief Check if a flag exists on this entity or its parent.
+     *
+     * @param flagName
+     * @return Whether the flag exists on this entity or its parent.
+     */
+    bool HasParentContainFlag(const std::string& flagName) const;
+
+    /**
      * @brief Get the value of a flag.
      * @param flagName The name of the flag.
      * @param defaultValue The default value if the flag doesn't exist.

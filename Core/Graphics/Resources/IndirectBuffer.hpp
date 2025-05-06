@@ -7,7 +7,7 @@ namespace MapleLeaf {
 class IndirectBuffer : public Descriptor, public Buffer
 {
 public:
-    explicit IndirectBuffer(VkDeviceSize size, const void* data = nullptr);
+    explicit IndirectBuffer(VkDeviceSize size, const void* data = nullptr, bool align = false);
 
     void Update(const void* newData);
     void Update(const void* newData, VkDeviceSize size);

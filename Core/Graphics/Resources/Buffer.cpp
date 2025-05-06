@@ -3,10 +3,14 @@
 #include <array>
 
 namespace MapleLeaf {
-Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, const void* data)
-    : size(size)
+Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, const void* data, bool align)
 {
-    auto logicalDevice = Graphics::Get()->GetLogicalDevice();
+    auto logicalDevice  = Graphics::Get()->GetLogicalDevice();
+    auto physicalDevice = Graphics::Get()->GetPhysicalDevice();
+
+    this->size = align ? (size + physicalDevice->GetProperties().limits.nonCoherentAtomSize - 1) &
+                             ~(physicalDevice->GetProperties().limits.nonCoherentAtomSize - 1)
+                       : size;
 
     auto graphicsFamily = logicalDevice->GetGraphicsFamily();
     auto presentFamily  = logicalDevice->GetPresentFamily();
@@ -17,7 +21,7 @@ Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlag
     // Create the buffer handle.
     VkBufferCreateInfo bufferCreateInfo    = {};
     bufferCreateInfo.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferCreateInfo.size                  = size;
+    bufferCreateInfo.size                  = this->size;
     bufferCreateInfo.usage                 = usage | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;   // device address for ray tracing
     bufferCreateInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
     bufferCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamily.size());
