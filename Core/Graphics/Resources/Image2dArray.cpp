@@ -251,4 +251,21 @@ void Image2dArray::Image2dArrayPipelineBarrierComputeToGraphic(const CommandBuff
                              arrayLayers,
                              0);
 }
+
+void Image2dArray::Image2dArrayPipelineBarrierGraphicToCompute(const CommandBuffer& commandBuffer, uint32_t mipLevel) const
+{
+    InsertImageMemoryBarrier(commandBuffer,
+                             image,
+                             VK_ACCESS_SHADER_WRITE_BIT,
+                             VK_ACCESS_SHADER_READ_BIT,
+                             layout,
+                             layout,
+                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                             VK_IMAGE_ASPECT_COLOR_BIT,
+                             1,
+                             mipLevel,
+                             arrayLayers,
+                             0);
+}
 }   // namespace MapleLeaf

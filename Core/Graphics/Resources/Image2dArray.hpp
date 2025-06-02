@@ -51,6 +51,7 @@ public:
     void Image2dArrayPipelineBarrierRayTracingToCompute(const CommandBuffer& commandBuffer, uint32_t mipLevel = 0) const;
     void Image2dArrayPipelineBarrierComputeToCompute(const CommandBuffer& commandBuffer, uint32_t mipLevel = 0) const;
     void Image2dArrayPipelineBarrierComputeToGraphic(const CommandBuffer& commandBuffer, uint32_t mipLevel = 0) const;
+    void Image2dArrayPipelineBarrierGraphicToCompute(const CommandBuffer& commandBuffer, uint32_t mipLevel = 0) const;
 
     /**
      * Sets the pixels of this image.
