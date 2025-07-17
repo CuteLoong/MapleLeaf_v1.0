@@ -93,7 +93,7 @@ void MainApp::Update()
                 Graphics::Get()->SetRenderer(std::make_unique<SkyboxMappingRenderer>());
                 currentRenderer   = RendererType::SkyboxMapping;
                 exchangedPipeline = true;
-                currentRenderer   = RendererType::SkyboxMapping;
+                Imgui::Get()->ClearCustomWindows();
             }
         }
         else if (!sceneLoaded) {
@@ -101,7 +101,7 @@ void MainApp::Update()
                 Graphics::Get()->SetRenderer(std::make_unique<DefaultRenderer>());
                 currentRenderer   = RendererType::Default;
                 exchangedPipeline = true;
-                currentRenderer   = RendererType::Default;
+                Imgui::Get()->ClearCustomWindows();
             }
         }
         else if (sceneLoaded && scene->IsStarted()) {
@@ -109,7 +109,7 @@ void MainApp::Update()
                 Graphics::Get()->SetRenderer(std::make_unique<DeferredRenderer>());
                 currentRenderer   = RendererType::Deferred;
                 exchangedPipeline = true;
-                currentRenderer   = RendererType::Deferred;
+                Imgui::Get()->ClearCustomWindows();
             }
         }
     }
@@ -119,7 +119,6 @@ void MainApp::Update()
         if (!userPath.empty()) {
             auto scene = std::make_unique<SceneBuilder>(userPath);
             Scenes::Get()->SetScene(std::move(scene));
-            sceneLoaded   = true;
             sceneLoaded   = true;
             reloadedScene = true;
         }
