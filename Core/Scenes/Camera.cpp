@@ -42,11 +42,6 @@ void Camera::Update()
 
     UpdateCameraInfo();
     UpdateStereoCameraInfo();
-
-    // if (frameID >= 14 && frameID <= 614)
-    //     Graphics::Get()->CaptureScreenshot("G:/Fancy_SSR_Result/David/SSAA2X/" + std::to_string(frameID - 14) + ".png");
-
-    // if (frameID >= 10 && frameID <= 611) Graphics::Get()->CaptureScreenshot("Screenshots/DDGI_" + std::to_string(frameID - 10) + ".png");
 }
 
 void Camera::UpdateByTransform()

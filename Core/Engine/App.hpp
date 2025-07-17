@@ -30,6 +30,8 @@ public:
 
     virtual void Update() = 0;
 
+    virtual bool Exchanged() = 0;
+
     const std::string& GetName() const { return name; }
 
     void SetName(const std::string& name) { this->name = name; }

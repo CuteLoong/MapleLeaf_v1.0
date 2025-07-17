@@ -45,9 +45,9 @@ public:
     const StorageBuffer* GetStorageDirectionalLights() const { return storageDirectionalLights.get(); }
     const StorageBuffer* GetStorageAreaLights() const { return storageAreaLights.get(); }
 
-    const Image2d* GetLTCTexture1() { return (*LTCTexture1).get(); }
-    const Image2d* GetLTCTexture2() { return (*LTCTexture2).get(); }
-    const Image2d* GetBlueNoise() { return (*blueNoise).get(); }
+    const Image2d* GetLTCTexture1() { return (LTCTexture1).get(); }
+    const Image2d* GetLTCTexture2() { return (LTCTexture2).get(); }
+    const Image2d* GetBlueNoise() { return (blueNoise).get(); }
 
 private:
     std::vector<PointLight>       pointLights;
@@ -58,9 +58,9 @@ private:
     std::unique_ptr<StorageBuffer> storageDirectionalLights;
     std::unique_ptr<StorageBuffer> storageAreaLights;
 
-    Future<std::shared_ptr<Image2d>> LTCTexture1;
-    Future<std::shared_ptr<Image2d>> LTCTexture2;
-    Future<std::shared_ptr<Image2d>> blueNoise;
+    std::shared_ptr<Image2d> LTCTexture1;
+    std::shared_ptr<Image2d> blueNoise;
+    std::shared_ptr<Image2d> LTCTexture2;
 
     static std::shared_ptr<Image2d> LoadLTCTexture1();
     static std::shared_ptr<Image2d> LoadLTCTexture2();

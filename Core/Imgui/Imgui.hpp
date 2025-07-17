@@ -26,8 +26,10 @@ public:
     bool cmdRender(const CommandBuffer& commandBuffer);
 
     void RegisterCustomWindow(const std::string& name, const std::function<void()>& func);
+    void ClearCustomWindows() { customImguiWindows.clear(); }
 
     bool OpenFileDialog(std::string& outPath, const char* filter = "All Files\0*.*\0", const char* title = "Open File");
+    bool OpenFolderDialog(std::string& outPath, const char* title);
 
     const glm::vec2& GetScale() const { return scale; }
     const glm::vec2& GetTranslate() const { return translate; }

@@ -44,5 +44,7 @@ public:
 private:
     std::vector<std::string> searchPaths;
     std::filesystem::path    rootPath;
+
+    void RegisterImGui();
 };
 }   // namespace MapleLeaf

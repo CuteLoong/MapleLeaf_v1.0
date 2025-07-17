@@ -26,9 +26,9 @@ public:
     bool            GetSpacePressed() { return std::exchange(spacePressed, false); }
 
 private:
-    glm::vec3 positionDelta;
-    glm::vec2 rotationDelta;
-    float     scrollDelta;
+    glm::vec3 positionDelta = glm::vec3(0.0f);
+    glm::vec2 rotationDelta = glm::vec3(0.0f);
+    float     scrollDelta   = 0.0f;
 
     bool cusorLeftPress = false;
     bool spacePressed   = false;

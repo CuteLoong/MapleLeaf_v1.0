@@ -4,7 +4,6 @@
 #include "Resources.hpp"
 #include "Scene.hpp"
 
-
 namespace MapleLeaf {
 class Scenes : public Module::Registrar<Scenes>
 {
@@ -12,6 +11,8 @@ class Scenes : public Module::Registrar<Scenes>
 
 public:
     Scenes();
+
+    void RegisterImGui();
 
     void Update() override;
 

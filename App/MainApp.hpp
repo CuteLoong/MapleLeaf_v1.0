@@ -24,10 +24,15 @@ public:
     void Start() override;
     void Update() override;
 
+    bool Exchanged() override { return exchangedPipeline || reloadedScene; }
+
 private:
     std::string  scenePath;
     bool         sceneLoaded     = false;
     RendererType currentRenderer = RendererType::None;   // Track current renderer type
+
+    bool exchangedPipeline = false;
+    bool reloadedScene     = false;
 
     void RegisterImGui();
 };

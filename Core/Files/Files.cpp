@@ -1,5 +1,6 @@
 #include "Files.hpp"
 
+#include "Imgui.hpp"
 #include "Log.hpp"
 #include <exception>
 #include <filesystem>
@@ -12,7 +13,10 @@ Files::Files()
 {}
 Files::~Files() {}
 
-void Files::Update() {}
+void Files::Update()
+{
+    RegisterImGui();
+}
 
 void Files::AddSearchPath(const std::string& path)
 {
@@ -80,5 +84,21 @@ std::optional<std::filesystem::path> Files::GetExistPath(const std::filesystem::
         if (ExistsInPath(rootPath / searchPath / path)) return rootPath / searchPath / path;
     }
     return std::nullopt;
+}
+
+void Files::RegisterImGui()
+{
+    if (auto* imgui = Imgui::Get()) {
+        imgui->RegisterCustomWindow(typeid(*this).name(), [this]() {
+            ImGui::SetNextItemWidth(100.0f);
+            if (ImGui::Button("Capture Screenshot")) {
+                std::string tmpPath;
+                if (Imgui::Get()->OpenFolderDialog(tmpPath, "Select screenshot path")) {
+                    Graphics::Get()->CaptureScreenshot(tmpPath + "/Screenshot_" + Time::GetDateTime("%Y%m%d%H%M%S.png"));
+                    ImGui::Text("Screenshot captured!");
+                }
+            }
+        });
+    }
 }
 }   // namespace MapleLeaf

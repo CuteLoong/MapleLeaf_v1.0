@@ -26,7 +26,7 @@ public:
         float whiteScale;
         Type  type;
 
-        ToneMappingInfo(float exposure = 1.0f, float gamma = 2.2f, float whiteMaxLuminance = 1.0f, float whiteScale = 11.2f, Type type = Type::Aces)
+        ToneMappingInfo(float exposure = 1.0f, float gamma = 2.2f, float whiteMaxLuminance = 1.0f, float whiteScale = 11.2f, Type type = Type::Linear)
             : type(type)
             , exposure(exposure)
             , gamma(gamma)

@@ -17,6 +17,7 @@ public:
     Scene();
     virtual ~Scene()
     {
+        derivedScenes.Clear();
         systems.Clear();
         entities.Clear();
     }
@@ -96,6 +97,9 @@ public:
 
     bool IsStarted() const { return started; }
 
+    int  GetAnimationFPS() const { return animationFPS; }
+    void SetAnimationLength(double length) { globalAnimationLength = std::max(length, globalAnimationLength); }
+
     const glm::vec3& GetMinExtents() const { return minExtents; }
     const glm::vec3& GetMaxExtents() const { return maxExtents; }
     void             SetExtents(const glm::vec3& maxExtent, const glm::vec3& minExtent, const glm::mat4& transfrom);
@@ -108,6 +112,9 @@ private:
     EntityHolder       entities;
     DerivedSceneHolder derivedScenes;
     Camera*            camera;
+
+    int    animationFPS          = 120;
+    double globalAnimationLength = 0.0;
 
     glm::vec3 minExtents = glm::vec3(std::numeric_limits<float>::infinity());
     glm::vec3 maxExtents = glm::vec3(-std::numeric_limits<float>::infinity());

@@ -54,6 +54,8 @@ public:
 
     int32_t Run();
 
+    void RegisterImGui();
+
     const std::string& GetArgv0() const { return argv0; };
     const Version&     GetVersion() const { return engineVersion; }
 

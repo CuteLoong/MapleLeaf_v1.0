@@ -10,6 +10,7 @@ AnimationController::AnimationController(const std::shared_ptr<Animation> animat
     localMatrix   = glm::mat4(1.0f);
 
     mGlobalAnimationLength = std::max(mGlobalAnimationLength, animation->getDuration());
+    Scenes::Get()->GetScene()->SetAnimationLength(mGlobalAnimationLength);
 }
 
 void AnimationController::Update()
@@ -19,7 +20,7 @@ void AnimationController::Update()
     uint32_t animationIndex = camera->frameID;
     matrixChanged           = false;
 
-    double currentTime = (1.0 / 120.0) * animationIndex;
+    double currentTime = (1.0 / Scenes::Get()->GetScene()->GetAnimationFPS()) * animationIndex;
 
     double time = mLoopAnimations ? fmod(currentTime, mGlobalAnimationLength) : currentTime;
 

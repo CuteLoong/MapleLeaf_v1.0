@@ -1,5 +1,6 @@
 #include "Buffer.hpp"
 #include "Graphics.hpp"
+#include "Log.hpp"
 #include <array>
 
 namespace MapleLeaf {
@@ -73,15 +74,16 @@ Buffer::~Buffer()
 {
     auto logicalDevice = Graphics::Get()->GetLogicalDevice();
 
-    if (logicalDevice->IsMainThread()) {
-        std::lock_guard<std::mutex> lock(logicalDevice->GetSubmitGraphicsQueueMutex());
-        Graphics::CheckVk(vkQueueWaitIdle(logicalDevice->GetSubmitGraphicsQueue()));
+    try {
+        auto graphicsQueue = logicalDevice->GetSubmitGraphicsQueue();
+        auto computeQueue  = logicalDevice->GetSubmitComputeQueue();
+
+        if (graphicsQueue) Graphics::CheckVk(vkQueueWaitIdle(graphicsQueue));
+        if (computeQueue) Graphics::CheckVk(vkQueueWaitIdle(computeQueue));
     }
-    else {
-        std::lock_guard<std::mutex> lock(logicalDevice->GetIdleGraphicsQueueMutex());
-        Graphics::CheckVk(vkQueueWaitIdle(logicalDevice->GetIdleGraphicsQueue()));
+    catch (const std::exception& e) {
+        Log::Error("Buffer::~Buffer vkQueueWaitIdle error: ", e.what(), std::to_string(size), " bytes, device address: ", deviceAddress);
     }
-    // Graphics::CheckVk(vkDeviceWaitIdle(*logicalDevice));
 
     vkDestroyBuffer(*logicalDevice, buffer, nullptr);
     vkFreeMemory(*logicalDevice, bufferMemory, nullptr);

@@ -106,4 +106,21 @@ void ImageDepth::CopyImageDepth(const CommandBuffer& commandBuffer, const ImageD
                              1,
                              0);
 }
+
+void ImageDepth::ImageDepthPipelineBarrierGraphicToCompute(const CommandBuffer& commandBuffer, int mipLevel) const
+{
+    InsertImageMemoryBarrier(commandBuffer,
+                             image,
+                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                             VK_ACCESS_SHADER_READ_BIT,
+                             layout,
+                             layout,
+                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                             VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
+                             1,
+                             mipLevel,
+                             1,
+                             0);
+}
 }   // namespace MapleLeaf

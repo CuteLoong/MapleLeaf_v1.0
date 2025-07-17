@@ -4,7 +4,6 @@
 #include "Graphics.hpp"
 #include "Imgui.hpp"
 #include "PipelineCompute.hpp"
-#include "Resources.hpp"
 
 namespace MapleLeaf {
 SkyboxSystem::SkyboxSystem()
@@ -12,7 +11,7 @@ SkyboxSystem::SkyboxSystem()
     , exposure(1.0f)
     , rotation(0.0f, 0.0f, 0.0f)
 {
-    brdf   = Resources::Get()->GetThreadPool().Enqueue(ComputeBRDF, 512);
+    brdf   = ComputeBRDF(512);
     loaded = false;
 }
 
@@ -59,7 +58,7 @@ void SkyboxSystem::RegisterCustomWindow()
                 // }
 
                 ImGui::SetNextItemWidth(300.0f);
-                if (ImGui::SliderFloat3("Rotation", &rotation.x, 0.0f, 360.0f, "%.2f")) {
+                if (ImGui::SliderFloat3("Sky_Rot", &rotation.x, 0.0f, 360.0f, "%.2f")) {
                     skybox->SetRotation(rotation);
                 }
             }
@@ -76,8 +75,8 @@ void SkyboxSystem::Update()
 void SkyboxSystem::ComputeSkybox()
 {
     if (skybox != nullptr && skybox->GetMapped() && !loaded) {
-        irradiance  = Resources::Get()->GetThreadPool().Enqueue(ComputeIrradiance, skybox->GetImageCube(), 64);
-        prefiltered = Resources::Get()->GetThreadPool().Enqueue(ComputePrefiltered, skybox->GetImageCube(), 512);
+        irradiance  = ComputeIrradiance(skybox->GetImageCube(), 64);
+        prefiltered = ComputePrefiltered(skybox->GetImageCube(), 512);
         loaded      = true;
         // irradiance  = ComputeIrradiance(skybox->GetImageCube(), 64);
         // prefiltered = ComputePrefiltered(skybox->GetImageCube(), 512);

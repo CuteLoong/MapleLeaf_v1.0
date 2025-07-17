@@ -81,36 +81,47 @@ void MainApp::Update()
         Engine::Get()->RequestClose();
     }
 
+    exchangedPipeline  = false;
+    bool reloadedScene = false;
+
+    RegisterImGui();
+
     if (const auto* scene = Scenes::Get()->GetScene()) {
         if (const auto* skyboxSystem = scene->GetSystem<SkyboxSystem>(); skyboxSystem->WaitMapping()) {
             // Only change to SkyboxMappingRenderer if not already using it
             if (currentRenderer != RendererType::SkyboxMapping) {
                 Graphics::Get()->SetRenderer(std::make_unique<SkyboxMappingRenderer>());
-                currentRenderer = RendererType::SkyboxMapping;
+                currentRenderer   = RendererType::SkyboxMapping;
+                exchangedPipeline = true;
+                currentRenderer   = RendererType::SkyboxMapping;
             }
         }
         else if (!sceneLoaded) {
             if (currentRenderer != RendererType::Default) {
                 Graphics::Get()->SetRenderer(std::make_unique<DefaultRenderer>());
-                currentRenderer = RendererType::Default;
+                currentRenderer   = RendererType::Default;
+                exchangedPipeline = true;
+                currentRenderer   = RendererType::Default;
             }
         }
         else if (sceneLoaded && scene->IsStarted()) {
             if (currentRenderer != RendererType::Deferred) {
                 Graphics::Get()->SetRenderer(std::make_unique<DeferredRenderer>());
-                currentRenderer = RendererType::Deferred;
+                currentRenderer   = RendererType::Deferred;
+                exchangedPipeline = true;
+                currentRenderer   = RendererType::Deferred;
             }
         }
     }
-
-    RegisterImGui();
 
     if (!sceneLoaded) {
         std::filesystem::path userPath(scenePath);
         if (!userPath.empty()) {
             auto scene = std::make_unique<SceneBuilder>(userPath);
             Scenes::Get()->SetScene(std::move(scene));
-            sceneLoaded = true;
+            sceneLoaded   = true;
+            sceneLoaded   = true;
+            reloadedScene = true;
         }
     }
 }

@@ -1,4 +1,5 @@
 #include "Engine.hpp"
+#include "Imgui.hpp"
 #include "Log.hpp"
 #include "Module.hpp"
 
@@ -9,7 +10,7 @@ Engine::Engine(std::string argv0, ModuleFilter&& moduleFilter)
     : argv0(std::move(argv0))
     , engineVersion(1, 0, 0)
     , running(true)
-    , elapsedUpdate(15.77ms)
+    , elapsedUpdate(16.67ms)
     , elapsedRender(-1s)
     , fpsLimit(-1.0f)
 {
@@ -42,7 +43,7 @@ int32_t Engine::Run()
 
         UpdateStage(Module::Stage::Always);
 
-        if (elapsedUpdate.GetElapsed() != 0) {
+        if (elapsedUpdate.GetElapsed() != 0 || app->Exchanged()) {
             // Resets the timer.
             ups.Update(Time::Now());
 
@@ -100,5 +101,14 @@ void Engine::DestroyModule(TypeId id)
 void Engine::UpdateStage(Module::Stage stage)
 {
     for (auto& moduleId : moduleStages[stage]) modules[moduleId]->Update();
+}
+
+void Engine::RegisterImGui()
+{
+    if (auto* imgui = Imgui::Get()) {
+        // ImGui::Text("MapleLeaf Engine %d.%d.%d", engineVersion.major, engineVersion.minor, engineVersion.patch);
+        ImGui::Text("FPS: %u", fps.value);
+        ImGui::Text("UPS: %u", ups.value);
+    }
 }
 }   // namespace MapleLeaf

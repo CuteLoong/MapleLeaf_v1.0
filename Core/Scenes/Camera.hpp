@@ -11,6 +11,8 @@
 namespace MapleLeaf {
 class Camera : public Component::Registrar<Camera>
 {
+    friend class Scenes;
+
 public:
     Camera();
 

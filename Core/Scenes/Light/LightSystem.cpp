@@ -1,16 +1,15 @@
 #include "LightSystem.hpp"
 
 #include "Light.hpp"
-#include "Resources.hpp"
 #include "Scenes.hpp"
 #include "Transform.hpp"
 
 namespace MapleLeaf {
 
 LightSystem::LightSystem()
-    : LTCTexture1(Resources::Get()->GetThreadPool().Enqueue(LoadLTCTexture1))
-    , LTCTexture2(Resources::Get()->GetThreadPool().Enqueue(LoadLTCTexture2))
-    , blueNoise(Resources::Get()->GetThreadPool().Enqueue(LoadBlueNoise))
+    : LTCTexture1(LoadLTCTexture1())
+    , LTCTexture2(LoadLTCTexture2())
+    , blueNoise(LoadBlueNoise())
     , pointLights(1, PointLight())
     , directionalLights(1, DirectionalLight())
     , areaLights(1, AreaLight())
@@ -18,8 +17,10 @@ LightSystem::LightSystem()
 
 void LightSystem::Update()
 {
-    auto sceneLights   = Scenes::Get()->GetScene()->GetComponents<Light>();
-    bool updateStorage = false;
+    auto sceneLights             = Scenes::Get()->GetScene()->GetComponents<Light>();
+    bool updatePointLights       = false;
+    bool updateDirectionalLights = false;
+    bool updateAreaLights        = false;
 
     for (const auto& light : sceneLights) {
         if (light->GetEntity()->GetComponent<Transform>()->GetUpdateStatus() != Transform::UpdateStatus::Transformation) continue;
@@ -28,6 +29,7 @@ void LightSystem::Update()
             directionalLight.color            = light->GetColor();
             directionalLight.direction        = light->GetDirection();
             directionalLights.push_back(directionalLight);
+            updateDirectionalLights = true;
         }
         else if (light->type == LightType::Point) {
             PointLight pointLight = {};
@@ -37,6 +39,7 @@ void LightSystem::Update()
             }
             pointLight.attenuation = light->GetAttenuation();
             pointLights.push_back(pointLight);
+            updatePointLights = true;
         }
         else if (light->type == LightType::Area) {
             AreaLight areatLight = {};
@@ -49,16 +52,41 @@ void LightSystem::Update()
             areatLight.twoSided  = light->GetTwoSide();
             areatLight.intensity = light->GetIntensity();
             areaLights.push_back(areatLight);
+            updateAreaLights = true;
         }
-        updateStorage = true;
+    }
+    if (updatePointLights) {
+        if (storagePointLights == nullptr || storagePointLights->GetSize() < static_cast<VkDeviceSize>(pointLights.size() * sizeof(PointLight)))
+            storagePointLights =
+                std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(pointLights.size() * sizeof(PointLight)), pointLights.data());
+        else
+            storagePointLights->Update(pointLights.data(), static_cast<VkDeviceSize>(pointLights.size() * sizeof(PointLight)));
     }
 
-    if (updateStorage || storagePointLights == nullptr || storageDirectionalLights == nullptr || storageAreaLights == nullptr) {
-        storagePointLights = std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(pointLights.size() * sizeof(PointLight)), pointLights.data());
-        storageDirectionalLights =
-            std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(directionalLights.size() * sizeof(DirectionalLight)), directionalLights.data());
-        storageAreaLights = std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(areaLights.size() * sizeof(AreaLight)), areaLights.data());
+    if (updateDirectionalLights) {
+        if (storageDirectionalLights == nullptr ||
+            storageDirectionalLights->GetSize() < static_cast<VkDeviceSize>(directionalLights.size() * sizeof(DirectionalLight)))
+            storageDirectionalLights = std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(directionalLights.size() * sizeof(DirectionalLight)),
+                                                                       directionalLights.data());
+        else
+            storageDirectionalLights->Update(directionalLights.data(),
+                                             static_cast<VkDeviceSize>(directionalLights.size() * sizeof(DirectionalLight)));
     }
+
+    if (updateAreaLights) {
+        if (storageAreaLights == nullptr || storageAreaLights->GetSize() < static_cast<VkDeviceSize>(areaLights.size() * sizeof(AreaLight)))
+            storageAreaLights = std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(areaLights.size() * sizeof(AreaLight)), areaLights.data());
+        else
+            storageAreaLights->Update(areaLights.data(), static_cast<VkDeviceSize>(areaLights.size() * sizeof(AreaLight)));
+    }
+
+    // if (updateStorage || storagePointLights == nullptr || storageDirectionalLights == nullptr || storageAreaLights == nullptr) {
+    //     storagePointLights = std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(pointLights.size() * sizeof(PointLight)),
+    //     pointLights.data()); storageDirectionalLights =
+    //         std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(directionalLights.size() * sizeof(DirectionalLight)),
+    //         directionalLights.data());
+    //     storageAreaLights = std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(areaLights.size() * sizeof(AreaLight)), areaLights.data());
+    // }
 }
 
 std::shared_ptr<Image2d> LightSystem::LoadLTCTexture1()

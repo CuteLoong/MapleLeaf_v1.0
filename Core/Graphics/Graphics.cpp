@@ -54,6 +54,15 @@ void Graphics::RegisterImGui()
                         VK_API_VERSION_MAJOR(GetPhysicalDevice()->GetProperties().apiVersion),
                         VK_API_VERSION_MINOR(GetPhysicalDevice()->GetProperties().apiVersion),
                         VK_API_VERSION_PATCH(GetPhysicalDevice()->GetProperties().apiVersion));
+
+            // ImGui::SetNextItemWidth(100.0f);
+            // if (ImGui::Button("Capture Screenshot")) {
+            //     std::string tmpPath;
+            //     if (Imgui::Get()->OpenFolderDialog(tmpPath, "Select screenshot path")) {
+            //         CaptureScreenshot(tmpPath + "/Screenshot_" + Time::GetDateTime("%Y%m%d%H%M%S.png"));
+            //         ImGui::Text("Screenshot captured!");
+            //     }
+            // }
         });
     }
 }
@@ -414,6 +423,7 @@ void Graphics::CheckVk(VkResult result)
     if (result >= 0) return;
 
     auto failure = StringifyResultVk(result);
+    Log::Error("Vulkan error: ", failure, " (", result, ")\n");
 
     throw std::runtime_error("Vulkan error: " + failure);
 }

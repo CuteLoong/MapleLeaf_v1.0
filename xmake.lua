@@ -102,6 +102,6 @@ target("MapleLeaf")
     add_includedirs("App/")
     add_files("App/*.cpp")
     if is_plat("windows") then
-        add_syslinks("Comdlg32") -- Adding Windows Common Dialogs Library.
+        add_syslinks("Comdlg32", "shell32", "ole32") -- Adding Windows Common Dialogs Library.
     end
 target_end()

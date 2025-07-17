@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Future.hpp"
 #include "Image2d.hpp"
 #include "ImageCube.hpp"
 #include "Skybox.hpp"
@@ -19,9 +18,9 @@ public:
     float GetGamma() const { return gamma; }
     float GetExposure() const { return exposure; }
 
-    const Image2d*   GetBRDF() { return (*brdf).get(); }
-    const ImageCube* GetIrradiance() { return (*irradiance).get(); }
-    const ImageCube* GetPrefiltered() { return (*prefiltered).get(); }
+    const Image2d*   GetBRDF() { return (brdf).get(); }
+    const ImageCube* GetIrradiance() { return (irradiance).get(); }
+    const ImageCube* GetPrefiltered() { return (prefiltered).get(); }
 
     const ImageCube* GetSkybox() { return skybox->GetImageCube(); }
     const Image2d*   GetSkyboxEqMap() { return skybox->GetImage2d(); }
@@ -41,9 +40,9 @@ private:
 
     std::unique_ptr<Skybox> skybox;
 
-    Future<std::unique_ptr<Image2d>>   brdf;
-    Future<std::unique_ptr<ImageCube>> irradiance;
-    Future<std::unique_ptr<ImageCube>> prefiltered;
+    std::unique_ptr<Image2d>   brdf;
+    std::unique_ptr<ImageCube> irradiance;
+    std::unique_ptr<ImageCube> prefiltered;
 
     static std::unique_ptr<Image2d>   ComputeBRDF(uint32_t size);
     static std::unique_ptr<ImageCube> ComputeIrradiance(const ImageCube* source, uint32_t size);

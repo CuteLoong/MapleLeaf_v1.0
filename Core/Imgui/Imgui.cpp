@@ -1,6 +1,7 @@
 #include "Imgui.hpp"
 #include "imgui_impl_glfw.h"
 #define NOMINMAX
+#include <ShlObj.h>
 #include <windows.h>
 
 namespace MapleLeaf {
@@ -108,7 +109,8 @@ void Imgui::Update()
     ImGui::SetWindowSize(ImVec2(300, 300), ImGuiCond_Always);
 
     ImGui::Begin(Engine::Get()->GetApp()->GetName().c_str(), nullptr);
-    ImGui::Text("FPS : %i", Engine::Get()->GetFps());
+    Engine::Get()->RegisterImGui();
+    // ImGui::Text("FPS : %i", Engine::Get()->GetFps());
     for (const auto& [name, func] : customImguiWindows) {
         if (ImGui::CollapsingHeader(name.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) func();
     }
@@ -185,6 +187,30 @@ bool Imgui::OpenFileDialog(std::string& outPath, const char* filter, const char*
     if (GetOpenFileNameA(&ofn)) {
         outPath = filename;
         return true;
+    }
+    return false;
+}
+
+bool Imgui::OpenFolderDialog(std::string& outPath, const char* title)
+{
+    BROWSEINFOA bi = {0};   // Initialize to zeros
+    bi.lpszTitle   = title;
+    bi.ulFlags     = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;   // Key flags for folder selection
+
+    // Call the shell function to open the folder browser dialog
+    LPITEMIDLIST pidl = SHBrowseForFolderA(&bi);
+
+    if (pidl != nullptr) {
+        // If the user selected a folder, convert the PIDL to a file system path
+        char pathBuffer[MAX_PATH];
+        if (SHGetPathFromIDListA(pidl, pathBuffer)) {
+            outPath = pathBuffer;
+            // Free the PIDL returned by SHBrowseForFolder
+            CoTaskMemFree(pidl);
+            return true;
+        }
+        // Free the PIDL even if SHGetPathFromIDListA fails
+        CoTaskMemFree(pidl);
     }
     return false;
 }

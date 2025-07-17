@@ -20,7 +20,6 @@ void ImguiSubrender::PreRender(const CommandBuffer& commandBuffer) {}
 
 void ImguiSubrender::Render(const CommandBuffer& commandBuffer)
 {
-
     uniformScaleTranslate.Push("scale", Imgui::Get()->GetScale());
     uniformScaleTranslate.Push("translate", Imgui::Get()->GetTranslate());
 
