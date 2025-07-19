@@ -10,7 +10,6 @@
 #include "Surface.hpp"
 #include "Swapchain.hpp"
 
-
 namespace MapleLeaf {
 class Graphics : public Module::Registrar<Graphics>
 {
@@ -32,8 +31,9 @@ public:
     Renderer* GetRenderer() const { return renderer.get(); }
     void      SetRenderer(std::unique_ptr<Renderer>&& renderer);
 
-    const RenderStage* GetRenderStage(uint32_t index) const;
-    const Descriptor*  GetAttachment(const std::string& name) const;
+    const RenderStage*              GetRenderStage(uint32_t index) const;
+    const Descriptor*               GetAttachment(const std::string& name) const;
+    const std::vector<std::string>& GetAttachmentNames() const { return attachmentNames; }
 
     static std::string StringifyResultVk(VkResult result);
     static void        CheckVk(VkResult result);
@@ -41,10 +41,10 @@ public:
     void CaptureScreenshot(const std::filesystem::path& filename);
     void CaptureImage2d(const std::filesystem::path filename, const Image* image, int mipLevel = 0, int arrayLayer = 0, bool exportAlpha = true);
 
-
 private:
     std::unique_ptr<Renderer>                renderer;
     std::map<std::string, const Descriptor*> attachments;
+    std::vector<std::string>                 attachmentNames;
     std::unique_ptr<Instance>                instance;
 
     std::unique_ptr<PhysicalDevice> physicalDevice;

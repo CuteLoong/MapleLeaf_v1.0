@@ -53,6 +53,9 @@ public:
     float GetAspectRatio() const { return aspectRatio; }
     void  SetAspectRatio(float aspectRatio) { this->aspectRatio = aspectRatio; }
 
+    void     SetFrameID(uint32_t frameID) { this->frameID = frameID; }
+    uint32_t GetFrameID() const { return frameID; }
+
     const glm::vec3& GetPosition() const { return position; }
     const glm::vec3& GetRotation() const { return rotation; }
     const glm::vec3& GetVelocity() const { return velocity; }

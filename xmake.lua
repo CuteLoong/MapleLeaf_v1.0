@@ -51,6 +51,7 @@ add_includedirs(
 "Core/Graphics/Pipelines", 
 "Core/Graphics/AccelerationStruct",
 "Core/Files", 
+"Core/FrameRecord",
 "Core/Models", 
 "Core/Materials", 
 "Core/Resources", 

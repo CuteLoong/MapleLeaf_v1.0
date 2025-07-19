@@ -16,6 +16,7 @@ target("Core")
     "Graphics/Pipelines/*.cpp", 
     "Graphics/AccelerationStruct/*.cpp", 
     "Files/*.cpp", 
+    "FrameRecord/*.cpp",
     "Models/*.cpp", 
     "Materials/*.cpp", 
     "Resources/*.cpp", 
