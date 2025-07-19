@@ -9,10 +9,9 @@ namespace MapleLeafApp {
 // Enum to track current renderer type
 enum class RendererType
 {
-    None,
     Default,
-    SkyboxMapping,
-    Deferred
+    Deferred,
+    Else
 };
 
 class MainApp : public App
@@ -28,8 +27,9 @@ public:
 
 private:
     std::string  scenePath;
-    bool         sceneLoaded     = false;
-    RendererType currentRenderer = RendererType::None;   // Track current renderer type
+    bool         sceneLoaded      = false;
+    RendererType currentRenderer  = RendererType::Default;   // Track current renderer type
+    RendererType selectedRenderer = RendererType::Default;   // Default renderer type
 
     bool exchangedPipeline = false;
     bool reloadedScene     = false;

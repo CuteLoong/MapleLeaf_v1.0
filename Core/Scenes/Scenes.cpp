@@ -4,6 +4,13 @@
 namespace MapleLeaf {
 Scenes::Scenes() {}
 
+void Scenes::SetScene(std::unique_ptr<Scene>&& scene)
+{
+    this->scene = std::move(scene);
+    this->scene->Start();
+    this->scene->started = true;
+}
+
 void Scenes::RegisterImGui()
 {
     if (auto* imgui = Imgui::Get()) {
@@ -58,13 +65,7 @@ void Scenes::Update()
 {
     if (!scene) return;
 
-    if (!scene->started) {
-        scene->Start();
-        scene->started = true;
-    }
-    else {
-        scene->Update();
-    }
+    scene->Update();
 
     RegisterImGui();
 }

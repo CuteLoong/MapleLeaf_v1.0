@@ -72,6 +72,17 @@ void MainApp::RegisterImGui()
                 if (Imgui::Get()->OpenFileDialog(scenePath, "GLTF Files\0*.gltf\0", "Load Scene")) sceneLoaded = false;
             }
         }
+
+        ImGui::SetNextItemWidth(150.0f);
+        static const char* rendererNames[] = {"Default", "Deferred"};
+        int                currentItem     = static_cast<int>(selectedRenderer);
+        if (ImGui::Combo("Renderer", &currentItem, rendererNames, IM_ARRAYSIZE(rendererNames))) {
+            switch (currentItem) {
+            case 0: selectedRenderer = RendererType::Default; break;
+            case 1: selectedRenderer = RendererType::Deferred; break;
+            default: Log::Error("Unknown renderer type selected: ", currentItem); return;
+            }
+        }
     });
 }
 
@@ -86,34 +97,6 @@ void MainApp::Update()
 
     RegisterImGui();
 
-    if (const auto* scene = Scenes::Get()->GetScene()) {
-        if (const auto* skyboxSystem = scene->GetSystem<SkyboxSystem>(); skyboxSystem->WaitMapping()) {
-            // Only change to SkyboxMappingRenderer if not already using it
-            if (currentRenderer != RendererType::SkyboxMapping) {
-                Graphics::Get()->SetRenderer(std::make_unique<SkyboxMappingRenderer>());
-                currentRenderer   = RendererType::SkyboxMapping;
-                exchangedPipeline = true;
-                Imgui::Get()->ClearCustomWindows();
-            }
-        }
-        else if (!sceneLoaded) {
-            if (currentRenderer != RendererType::Default) {
-                Graphics::Get()->SetRenderer(std::make_unique<DefaultRenderer>());
-                currentRenderer   = RendererType::Default;
-                exchangedPipeline = true;
-                Imgui::Get()->ClearCustomWindows();
-            }
-        }
-        else if (sceneLoaded && scene->IsStarted()) {
-            if (currentRenderer != RendererType::Deferred) {
-                Graphics::Get()->SetRenderer(std::make_unique<DeferredRenderer>());
-                currentRenderer   = RendererType::Deferred;
-                exchangedPipeline = true;
-                Imgui::Get()->ClearCustomWindows();
-            }
-        }
-    }
-
     if (!sceneLoaded) {
         std::filesystem::path userPath(scenePath);
         if (!userPath.empty()) {
@@ -121,6 +104,34 @@ void MainApp::Update()
             Scenes::Get()->SetScene(std::move(scene));
             sceneLoaded   = true;
             reloadedScene = true;
+        }
+    }
+
+    if (const auto* scene = Scenes::Get()->GetScene()) {
+        if (const auto* skyboxSystem = scene->GetSystem<SkyboxSystem>(); skyboxSystem->WaitMapping()) {
+            Graphics::Get()->SetRenderer(std::make_unique<SkyboxMappingRenderer>());
+            exchangedPipeline = true;
+            currentRenderer   = RendererType::Else;
+            Imgui::Get()->ClearCustomWindows();
+        }
+        else if (sceneLoaded) {
+            if (selectedRenderer != currentRenderer) {
+                if (selectedRenderer == RendererType::Default) {
+                    Graphics::Get()->SetRenderer(std::make_unique<DefaultRenderer>());
+                    currentRenderer   = RendererType::Default;
+                    exchangedPipeline = true;
+                    Imgui::Get()->ClearCustomWindows();
+                }
+                else if (selectedRenderer == RendererType::Deferred) {
+                    Graphics::Get()->SetRenderer(std::make_unique<DeferredRenderer>());
+                    currentRenderer   = RendererType::Deferred;
+                    exchangedPipeline = true;
+                    Imgui::Get()->ClearCustomWindows();
+                }
+                else {
+                    Log::Error("Unknown renderer type selected: ", static_cast<int>(selectedRenderer));
+                }
+            }
         }
     }
 }

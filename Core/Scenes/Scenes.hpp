@@ -18,7 +18,7 @@ public:
 
     Scene* GetScene() const { return scene.get(); }
     void   ClearScene() { scene.reset(); }
-    void   SetScene(std::unique_ptr<Scene>&& scene) { this->scene = std::move(scene); }
+    void   SetScene(std::unique_ptr<Scene>&& scene);
 
 private:
     std::unique_ptr<Scene> scene;
