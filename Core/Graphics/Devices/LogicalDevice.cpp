@@ -13,6 +13,7 @@ const std::vector<const char*> LogicalDevice::DeviceExtensions = {VK_KHR_SWAPCHA
                                                                   VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
                                                                   VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
                                                                   VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,
+                                                                  VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
 #ifdef MAPLELEAF_RAY_TRACING
                                                                   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
                                                                   VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
@@ -23,7 +24,6 @@ const std::vector<const char*> LogicalDevice::DeviceExtensions = {VK_KHR_SWAPCHA
 LogicalDevice::LogicalDevice(const Instance& instance, const PhysicalDevice& physicalDevice)
     : instance(instance)
     , physicalDevice(physicalDevice)
-    , mainThreadId(std::this_thread::get_id())
 {
     CreateQueueIndices();
     CreateLogicalDevice();
@@ -153,13 +153,18 @@ void LogicalDevice::CreateLogicalDevice()
     else
         Log::Warning("Selected GPU does not support shaderInt64!\n");
 
+    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures = {};
+    dynamicRenderingFeatures.sType                                       = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+    dynamicRenderingFeatures.dynamicRendering                            = VK_TRUE;
+    dynamicRenderingFeatures.pNext                                       = nullptr;
+
     VkPhysicalDeviceShaderAtomicFloatFeaturesEXT shaderAtomicFloatFeatures = {};
     shaderAtomicFloatFeatures.sType                                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
     shaderAtomicFloatFeatures.shaderImageFloat32Atomics                    = VK_TRUE;
     shaderAtomicFloatFeatures.shaderSharedFloat32Atomics                   = VK_TRUE;
     shaderAtomicFloatFeatures.shaderSharedFloat32AtomicAdd                 = VK_TRUE;
 
-    shaderAtomicFloatFeatures.pNext = nullptr;
+    shaderAtomicFloatFeatures.pNext = &dynamicRenderingFeatures;
 
     // add deviceAddress feature
     VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures = {};
@@ -226,12 +231,8 @@ void LogicalDevice::CreateLogicalDevice()
     volkLoadDevice(logicalDevice);
 
     vkGetDeviceQueue(logicalDevice, presentFamily.value(), 0, &presentQueue);
-    vkGetDeviceQueue(logicalDevice, graphicsFamily.value(), 0, &submitQueueWarpper.graphicsQueue);
-    vkGetDeviceQueue(logicalDevice, computeFamily.value(), 1, &submitQueueWarpper.computeQueue);
-    vkGetDeviceQueue(logicalDevice, transferFamily.value(), 1, &submitQueueWarpper.transferQueue);
-
-    vkGetDeviceQueue(logicalDevice, graphicsFamily.value(), 2, &idleQueueWarpper.graphicsQueue);
-    vkGetDeviceQueue(logicalDevice, computeFamily.value(), 2, &idleQueueWarpper.computeQueue);
-    vkGetDeviceQueue(logicalDevice, transferFamily.value(), 2, &idleQueueWarpper.transferQueue);
+    vkGetDeviceQueue(logicalDevice, graphicsFamily.value(), 0, &graphicsQueue);
+    vkGetDeviceQueue(logicalDevice, computeFamily.value(), 1, &computeQueue);
+    vkGetDeviceQueue(logicalDevice, transferFamily.value(), 2, &transferQueue);
 }
 }   // namespace MapleLeaf

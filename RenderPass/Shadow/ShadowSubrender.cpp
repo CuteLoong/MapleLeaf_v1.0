@@ -1,6 +1,7 @@
 #include "ShadowSubrender.hpp"
 #include "Scenes.hpp"
 #include "ShadowRender.hpp"
+#include "Vertex.hpp"
 
 namespace MapleLeaf {
 ShadowSubrender::ShadowSubrender(const Pipeline::Stage& stage)

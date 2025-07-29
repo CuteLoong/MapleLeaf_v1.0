@@ -2,7 +2,6 @@
 
 #include "Graphics.hpp"
 #include "Image.hpp"
-#include "vulkan/vulkan_core.h"
 #include <cmath>
 #include <stdint.h>
 

@@ -30,6 +30,8 @@ PipelineCompute::PipelineCompute(std::filesystem::path shaderStage, std::vector<
 PipelineCompute::~PipelineCompute()
 {
     auto logicalDevice = Graphics::Get()->GetLogicalDevice();
+    auto computeQueue  = logicalDevice->GetComputeQueue();
+    Graphics::CheckVk(vkQueueWaitIdle(computeQueue));
 
     vkDestroyShaderModule(*logicalDevice, shaderModule, nullptr);
 

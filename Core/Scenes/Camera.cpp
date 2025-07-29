@@ -17,6 +17,7 @@ Camera::Camera()
     , up(glm::vec3(0.0f, 1.0f, 0.0f))
     , forward(glm::vec3(0.0f, 0.0f, -1.0f))   // rotation(glm::vec3(0.0f, glm::radians(-90.0f), 0.0f))
     , position(glm::vec3(0.0f, 0.0f, 2.0f))
+    , aspectRatio(Devices::Get()->GetWindow()->GetAspectRatio())
 {
     right   = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
     frameID = 0;
@@ -60,7 +61,6 @@ void Camera::UpdateByInput()
 {
     auto delta = Engine::Get()->GetDelta().AsSeconds();
 
-    // if (!Scenes::Get()->GetScene()->IsPaused()) {
     auto positionDelta = Inputs::Get()->GetPositionDelta();
     auto rotationDelta = Inputs::Get()->GetRotationDelta();   // x---yaw y---pitch
     auto scrollDelta   = Inputs::Get()->GetScrollDelta();
@@ -91,9 +91,6 @@ void Camera::UpdateByInput()
     position += velocity.y * up;
 
     orthoScale -= scrollDelta * 0.1f;
-
-    // frameID = 0;
-    // }
 }
 
 void Camera::UpdateCameraInfo()

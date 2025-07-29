@@ -19,13 +19,6 @@ void Scenes::RegisterImGui()
             auto* camera = scene->GetCamera();
             if (!camera) return;
 
-            ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-            ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.6f, 0.0f, 1.0f));   // Orange text
-            // Optionally, increase frame padding slightly to give it more visual weight
-            // ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, ImGui::GetStyle().FramePadding.y + 2.0f));
-
             if (ImGui::CollapsingHeader("Animation Settings")) {
                 ImGui::Text("Animation Length: %.3f", scene->globalAnimationLength);
                 int frameID = static_cast<int>(camera->frameID);
@@ -54,9 +47,6 @@ void Scenes::RegisterImGui()
                 ImGui::InputFloat3("Position", &camera->position[0], "%.3f");
                 ImGui::InputFloat3("Rotation", &camera->rotation[0], "%.3f");
             }
-
-            ImGui::PopStyleColor(4);
-            // ImGui::PopStyleVar(1);
         });
     }
 }

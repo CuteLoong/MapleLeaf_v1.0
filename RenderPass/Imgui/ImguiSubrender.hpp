@@ -1,11 +1,6 @@
 #pragma once
 
-#include "DescriptorHandler.hpp"
-#include "Graphics.hpp"
-#include "Imgui.hpp"
-#include "PipelineGraphics.hpp"
 #include "Subrender.hpp"
-#include "UniformHandler.hpp"
 
 namespace MapleLeaf {
 class ImguiSubrender : public Subrender
@@ -19,9 +14,5 @@ public:
     void RegisterImGui() override;
 
 private:
-    PipelineGraphics pipeline;
-
-    DescriptorsHandler descriptorSet;
-    UniformHandler     uniformScaleTranslate;
 };
 }   // namespace MapleLeaf

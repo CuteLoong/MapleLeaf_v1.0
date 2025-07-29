@@ -3,7 +3,6 @@
 #include "Instance.hpp"
 #include "LogicalDevice.hpp"
 #include "PhysicalDevice.hpp"
-#include "vulkan/vulkan_core.h"
 
 namespace MapleLeaf {
 Surface::Surface(const Instance& instance, const PhysicalDevice& physicalDevice, const LogicalDevice& logicalDevice, const Window& window)

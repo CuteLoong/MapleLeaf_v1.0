@@ -10,6 +10,7 @@ class Instance
 
 public:
     static const std::vector<const char*> ValidationLayers;
+    static const std::vector<const char*> InstanceExtensions;
 
     friend VKAPI_ATTR VkBool32 VKAPI_CALL CallbackDebug(VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
                                                         VkDebugUtilsMessageTypeFlagsEXT             messageTypes,

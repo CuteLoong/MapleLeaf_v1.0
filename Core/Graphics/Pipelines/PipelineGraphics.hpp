@@ -5,7 +5,6 @@
 #include "Pipeline.hpp"
 #include "RenderStage.hpp"
 #include "glm/glm.hpp"
-#include "vulkan/vulkan_core.h"
 #include <filesystem>
 #include <vector>
 

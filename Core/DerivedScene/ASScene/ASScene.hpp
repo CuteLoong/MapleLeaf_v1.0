@@ -2,9 +2,9 @@
 
 #include "AccelerationStruct.hpp"
 #include "DerivedScene.hpp"
-
 #include "StorageBuffer.hpp"
 #include "config.h"
+#include "glm/glm.hpp"
 
 namespace MapleLeaf {
 class ASScene : public DerivedScene

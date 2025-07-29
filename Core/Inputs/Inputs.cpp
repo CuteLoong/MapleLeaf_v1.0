@@ -36,6 +36,7 @@ void Inputs::ProcessKeyboard(Key key, InputAction inputAction, InputMod inputMod
     if ((key == Key::Down) && moveButtonPressed && (inputMod == InputMod::None)) scrollDelta -= 1.0;
 
     if ((key == Key::Space) && (inputAction == InputAction::Press) && (inputMod == InputMod::None)) spacePressed = true;
+    if ((key == Key::F5) && (inputAction == InputAction::Press) && (inputMod == InputMod::None)) F5Pressed = true;
 }
 
 void Inputs::ProcessMousePosition(glm::vec2 value)

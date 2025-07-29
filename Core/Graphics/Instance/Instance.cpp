@@ -9,6 +9,9 @@
 namespace MapleLeaf {
 const std::vector<const char*> Instance::ValidationLayers = {"VK_LAYER_KHRONOS_validation"};   // "VK_LAYER_RENDERDOC_Capture"
 
+const std::vector<const char*> Instance::InstanceExtensions = {VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+                                                               VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME};
+
 VKAPI_ATTR VkBool32 VKAPI_CALL CallbackDebug(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
                                              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
@@ -118,7 +121,23 @@ std::vector<const char*> Instance::GetExtensions() const
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionsCount);
 
-    if (enableValidationLayers) extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    if (enableValidationLayers) {
+        extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    uint32_t instanceExtensionCount;
+    vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr);
+    std::vector<VkExtensionProperties> instanceExtensionProperties(instanceExtensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, instanceExtensionProperties.data());
+
+    for (const auto& extension : instanceExtensionProperties) {
+        for (const auto& requiredExtension : Instance::InstanceExtensions) {
+            if (strcmp(extension.extensionName, requiredExtension) == 0) {
+                extensions.emplace_back(requiredExtension);
+            }
+        }
+    }
+
     return extensions;
 }
 
@@ -163,7 +182,7 @@ void Instance::CreateInstance()
 
 
     Graphics::CheckVk(vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
-    volkLoadInstanceOnly(instance);
+    volkLoadInstance(instance);
 }
 
 void Instance::CreateDebugMessenger()

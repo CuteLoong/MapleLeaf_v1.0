@@ -57,18 +57,14 @@ void CommandBuffer::SubmitIdle()
     VkFence fence;
     Graphics::CheckVk(vkCreateFence(*logicalDevice, &fenceCreateInfo, nullptr, &fence));
 
-    {
-        std::lock_guard<std::mutex> lock(GetQueueMutex(SubmitType::Idle));
+    VkSubmitInfo submitInfo       = {};
+    submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers    = &commandBuffer;
 
-        VkSubmitInfo submitInfo       = {};
-        submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers    = &commandBuffer;
-
-        Graphics::CheckVk(vkResetFences(*logicalDevice, 1, &fence));
-        Graphics::CheckVk(vkQueueSubmit(queueSelected, 1, &submitInfo, fence));
-        Graphics::CheckVk(vkWaitForFences(*logicalDevice, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
-    }
+    Graphics::CheckVk(vkResetFences(*logicalDevice, 1, &fence));
+    Graphics::CheckVk(vkQueueSubmit(queueSelected, 1, &submitInfo, fence));
+    Graphics::CheckVk(vkWaitForFences(*logicalDevice, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
 
     vkDestroyFence(*logicalDevice, fence, nullptr);
 }
@@ -99,26 +95,8 @@ void CommandBuffer::Submit(const VkSemaphore& waitSemaphore, const VkSemaphore& 
         submitInfo.pSignalSemaphores    = &signalSemaphore;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(GetQueueMutex(SubmitType::Submit));
-        if (fence != VK_NULL_HANDLE) Graphics::CheckVk(vkResetFences(*logicalDevice, 1, &fence));
-        Graphics::CheckVk(vkQueueSubmit(queueSelected, 1, &submitInfo, fence));
-    }
-}
-
-std::mutex& CommandBuffer::GetQueueMutex(SubmitType submitType) const
-{
-    auto logicalDevice = Graphics::Get()->GetLogicalDevice();
-
-    switch (queueType) {
-    case VK_QUEUE_GRAPHICS_BIT:
-        return logicalDevice->IsMainThread() ? logicalDevice->GetSubmitGraphicsQueueMutex() : logicalDevice->GetIdleGraphicsQueueMutex();
-    case VK_QUEUE_COMPUTE_BIT:
-        return logicalDevice->IsMainThread() ? logicalDevice->GetSubmitComputeQueueMutex() : logicalDevice->GetIdleComputeQueueMutex();
-    case VK_QUEUE_TRANSFER_BIT:
-        return logicalDevice->IsMainThread() ? logicalDevice->GetSubmitTransferQueueMutex() : logicalDevice->GetIdleTransferQueueMutex();
-    default: throw std::runtime_error("Unknown queue type");
-    }
+    if (fence != VK_NULL_HANDLE) Graphics::CheckVk(vkResetFences(*logicalDevice, 1, &fence));
+    Graphics::CheckVk(vkQueueSubmit(queueSelected, 1, &submitInfo, fence));
 }
 
 VkQueue CommandBuffer::GetQueue(SubmitType submitType) const
@@ -126,12 +104,9 @@ VkQueue CommandBuffer::GetQueue(SubmitType submitType) const
     auto logicalDevice = Graphics::Get()->GetLogicalDevice();
 
     switch (queueType) {
-    case VK_QUEUE_GRAPHICS_BIT:
-        return logicalDevice->IsMainThread() ? logicalDevice->GetSubmitGraphicsQueue() : logicalDevice->GetIdleGraphicsQueue();
-    case VK_QUEUE_COMPUTE_BIT:
-        return logicalDevice->IsMainThread() ? logicalDevice->GetSubmitComputeQueue() : logicalDevice->GetIdleComputeQueue();
-    case VK_QUEUE_TRANSFER_BIT:
-        return logicalDevice->IsMainThread() ? logicalDevice->GetSubmitTransferQueue() : logicalDevice->GetIdleTransferQueue();
+    case VK_QUEUE_GRAPHICS_BIT: return logicalDevice->GetGraphicsQueue();
+    case VK_QUEUE_COMPUTE_BIT: return logicalDevice->GetComputeQueue();
+    case VK_QUEUE_TRANSFER_BIT: return logicalDevice->GetTransferQueue();
     default: return nullptr;
     }
 }

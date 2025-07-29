@@ -2,10 +2,7 @@
 
 #include "Buffer.hpp"
 #include "Descriptor.hpp"
-#include "Model.hpp"
 #include "volk.h"
-#include "vulkan/vulkan_core.h"
-#include <vector>
 
 namespace MapleLeaf {
 struct ASBuildInfo

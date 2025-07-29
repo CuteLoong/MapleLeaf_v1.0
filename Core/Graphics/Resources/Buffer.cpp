@@ -75,8 +75,8 @@ Buffer::~Buffer()
     auto logicalDevice = Graphics::Get()->GetLogicalDevice();
 
     try {
-        auto graphicsQueue = logicalDevice->GetSubmitGraphicsQueue();
-        auto computeQueue  = logicalDevice->GetSubmitComputeQueue();
+        auto graphicsQueue = logicalDevice->GetGraphicsQueue();
+        auto computeQueue  = logicalDevice->GetComputeQueue();
 
         if (graphicsQueue) Graphics::CheckVk(vkQueueWaitIdle(graphicsQueue));
         if (computeQueue) Graphics::CheckVk(vkQueueWaitIdle(computeQueue));

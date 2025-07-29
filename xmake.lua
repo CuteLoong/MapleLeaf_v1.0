@@ -31,7 +31,7 @@ set_configdir("Config")
 add_configfiles("./config.h.in")
 
 add_requires("glm", "glfw", "assimp", "stb", "boost", "nlohmann_json", "volk", "spirv-headers", "spirv-tools", "spirv-reflect", "glslang")
-add_requires("imgui", {configs = {glfw_vulkan = true}})
+add_requires("imgui", {configs = {volk = true, glfw = true, debug = true}})
 add_requires("freeimage", {configs = {shared = true}})
 add_packages("glm", "glfw", "volk", "spirv-tools", "spirv-reflect", "glslang", "assimp", "stb", "boost", "imgui", "freeimage", "nlohmann_json")
 

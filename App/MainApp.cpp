@@ -4,6 +4,7 @@
 #include "Engine.hpp"
 #include "FrameRecord.hpp"
 #include "Imgui.hpp"
+#include "Inputs.hpp"
 #include "Log.hpp"
 #include "SceneBuilder.hpp"
 #include "Scenes.hpp"
@@ -104,6 +105,8 @@ void MainApp::Update()
             Scenes::Get()->SetScene(std::move(scene));
             sceneLoaded   = true;
             reloadedScene = true;
+
+            Imgui::Get()->ClearCustomWindows();
         }
     }
 
@@ -115,7 +118,7 @@ void MainApp::Update()
             Imgui::Get()->ClearCustomWindows();
         }
         else if (sceneLoaded) {
-            if (selectedRenderer != currentRenderer) {
+            if (selectedRenderer != currentRenderer || Inputs::Get()->GetF5Pressed()) {
                 if (selectedRenderer == RendererType::Default) {
                     Graphics::Get()->SetRenderer(std::make_unique<DefaultRenderer>());
                     currentRenderer   = RendererType::Default;

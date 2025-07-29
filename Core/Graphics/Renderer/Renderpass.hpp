@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "NonCopyable.hpp"
-#include "vulkan/vulkan_core.h"
 
 namespace MapleLeaf {
 class LogicalDevice;

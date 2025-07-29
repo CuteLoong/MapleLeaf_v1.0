@@ -2,7 +2,6 @@
 
 #include "CommandPool.hpp"
 #include <memory>
-#include <mutex>
 
 namespace MapleLeaf {
 enum class SubmitType
@@ -31,8 +30,7 @@ public:
     bool                   IsRunning() const { return running; }
 
 private:
-    VkQueue     GetQueue(SubmitType submitType) const;
-    std::mutex& GetQueueMutex(SubmitType submitType) const;
+    VkQueue GetQueue(SubmitType submitType) const;
 
     std::shared_ptr<CommandPool> commandPool;
 

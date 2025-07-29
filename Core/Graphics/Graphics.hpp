@@ -21,6 +21,7 @@ public:
 
     void Update() override;
 
+    const Instance*        GetInstance() const { return instance.get(); }
     const PhysicalDevice*  GetPhysicalDevice() const { return physicalDevice.get(); }
     const LogicalDevice*   GetLogicalDevice() const { return logicalDevice.get(); }
     const Surface*         GetSurface() const { return surface.get(); }

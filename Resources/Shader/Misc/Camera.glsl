@@ -40,9 +40,16 @@ vec3 GetCameraDirection() {
     return vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2]);
 }
 
+/**
+ * @brief Get the camera's ray direction in world space from the screen UV coordinates
+ * @param uv The screen UV coordinates, in the range [0, 1]
+ * @return The ray direction in world space, from the camera position to the screen UV coordinates
+ */
 vec3 GetRayDirection(vec2 uv) {
-    vec4 viewPoint = camera.invView * camera.invProjection * vec4(uv.x * 2.0f - 1.0f, (uv.y * 2.0f - 1.0f) * camera.projectionParams.x, -1.0f, 1.0f);
-    vec3 ray = (camera.cameraPosition.xyz - viewPoint.xyz / viewPoint.w);
+    // vec4 viewPoint = camera.invView * camera.invProjection * vec4(uv.x * 2.0f - 1.0f, (uv.y * 2.0f - 1.0f) * camera.projectionParams.x, -1.0f, 1.0f);
+    // vec3 ray = (camera.cameraPosition.xyz - viewPoint.xyz / viewPoint.w);
+    vec3 P_view = vec3(camera.invProjection * (vec4(uv.x * 2.0f - 1.0f, (uv.y * 2.0f - 1.0f) * camera.projectionParams.x, -1.0f, 1.0f) * camera.projectionParams.z));
+    vec3 ray = normalize(camera.invView * vec4(P_view, 0.0f)).xyz;
     return normalize(ray);
 }
 
@@ -71,6 +78,15 @@ float Linear01ToProjDepth(float z) {
 float LinearEyeDepth(float z) {
     z = z * 0.5 + 0.5; // NDC to [0, 1]
     return 1.0 / (camera.zBufferParams.z * z + camera.zBufferParams.w);
+}
+
+float GetDepthFromViewDepth(float depth)
+{
+    float c1 = camera.projectionParams.y - camera.projectionParams.z; // n - f
+    float c2 = camera.projectionParams.z + camera.projectionParams.y; // f + n
+    float c3 = 2.0f * camera.projectionParams.y * camera.projectionParams.z; // 2.0f * f * n
+
+    return c3 / (c1 * depth) - c2 / c1;
 }
 
 vec3 ViewSpacePosAtScreenUV(vec2 uv, float depth)

@@ -24,6 +24,7 @@ public:
     const glm::vec2 GetRotationDelta() { return std::exchange(rotationDelta, glm::vec2(0.0f)); }
     const float     GetScrollDelta() { return std::exchange(scrollDelta, 0.0f); }
     bool            GetSpacePressed() { return std::exchange(spacePressed, false); }
+    bool            GetF5Pressed() { return std::exchange(F5Pressed, false); }
 
 private:
     glm::vec3 positionDelta = glm::vec3(0.0f);
@@ -32,6 +33,8 @@ private:
 
     bool cusorLeftPress = false;
     bool spacePressed   = false;
+
+    bool F5Pressed = false;
 
     void ProcessMouseButton(MouseButton mouseButton, InputAction inputAction, InputMod inputMod);
     void ProcessKeyboard(Key key, InputAction inputAction, InputMod inputMod);

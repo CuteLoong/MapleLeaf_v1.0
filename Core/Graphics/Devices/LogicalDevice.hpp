@@ -1,35 +1,12 @@
 #pragma once
 
 #include "volk.h"
-#include <mutex>
 #include <optional>
 #include <vector>
 
 namespace MapleLeaf {
 class Instance;
 class PhysicalDevice;
-
-class QueueWarpper
-{
-public:
-    QueueWarpper() {}
-
-    const VkQueue& GetGraphicsQueue() const { return graphicsQueue; }
-    const VkQueue& GetComputeQueue() const { return computeQueue; }
-    const VkQueue& GetTransferQueue() const { return transferQueue; }
-
-    std::mutex& GetGraphicsQueueMutex() const { return graphicsQueueMutex; }
-    std::mutex& GetComputeQueueMutex() const { return computeQueueMutex; }
-    std::mutex& GetTransferQueueMutex() const { return transferQueueMutex; }
-
-    VkQueue graphicsQueue = VK_NULL_HANDLE;
-    VkQueue computeQueue  = VK_NULL_HANDLE;
-    VkQueue transferQueue = VK_NULL_HANDLE;
-
-    mutable std::mutex graphicsQueueMutex;
-    mutable std::mutex computeQueueMutex;
-    mutable std::mutex transferQueueMutex;
-};
 
 class LogicalDevice
 {
@@ -51,24 +28,11 @@ public:
     uint32_t GetTransferFamily() const { return transferFamily.value(); }
 
     const VkQueue& GetPresentQueue() const { return presentQueue; }
-    const VkQueue& GetSubmitGraphicsQueue() const { return submitQueueWarpper.GetGraphicsQueue(); }
-    const VkQueue& GetSubmitComputeQueue() const { return submitQueueWarpper.GetComputeQueue(); }
-    const VkQueue& GetSubmitTransferQueue() const { return submitQueueWarpper.GetTransferQueue(); }
-    const VkQueue& GetIdleGraphicsQueue() const { return idleQueueWarpper.GetGraphicsQueue(); }
-    const VkQueue& GetIdleComputeQueue() const { return idleQueueWarpper.GetComputeQueue(); }
-    const VkQueue& GetIdleTransferQueue() const { return idleQueueWarpper.GetTransferQueue(); }
-
-    std::mutex& GetSubmitGraphicsQueueMutex() const { return submitQueueWarpper.GetGraphicsQueueMutex(); }
-    std::mutex& GetSubmitComputeQueueMutex() const { return submitQueueWarpper.GetComputeQueueMutex(); }
-    std::mutex& GetSubmitTransferQueueMutex() const { return submitQueueWarpper.GetTransferQueueMutex(); }
-    std::mutex& GetIdleGraphicsQueueMutex() const { return idleQueueWarpper.GetGraphicsQueueMutex(); }
-    std::mutex& GetIdleComputeQueueMutex() const { return idleQueueWarpper.GetComputeQueueMutex(); }
-    std::mutex& GetIdleTransferQueueMutex() const { return idleQueueWarpper.GetTransferQueueMutex(); }
+    const VkQueue& GetGraphicsQueue() const { return graphicsQueue; }
+    const VkQueue& GetComputeQueue() const { return computeQueue; }
+    const VkQueue& GetTransferQueue() const { return transferQueue; }
 
     uint32_t GetBindlessMaxDescriptorsCount() const { return bindlessMaxDescriptorsCount; }
-
-    const std::thread::id& GetMainThreadId() const { return mainThreadId; }
-    bool                   IsMainThread() const { return std::this_thread::get_id() == mainThreadId; }
 
     static const std::vector<const char*> DeviceExtensions;
 
@@ -85,11 +49,10 @@ private:
     std::optional<uint32_t> computeFamily   = std::nullopt;
     std::optional<uint32_t> transferFamily  = std::nullopt;
 
-    QueueWarpper submitQueueWarpper;
-    QueueWarpper idleQueueWarpper;
-    VkQueue      presentQueue = VK_NULL_HANDLE;
-
-    std::thread::id mainThreadId;
+    VkQueue graphicsQueue = VK_NULL_HANDLE;
+    VkQueue presentQueue  = VK_NULL_HANDLE;
+    VkQueue computeQueue  = VK_NULL_HANDLE;
+    VkQueue transferQueue = VK_NULL_HANDLE;
 
     uint32_t bindlessMaxDescriptorsCount = 0;
 

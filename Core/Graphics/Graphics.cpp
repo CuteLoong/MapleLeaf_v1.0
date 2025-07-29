@@ -11,7 +11,6 @@
 #include "glslang/Public/ShaderLang.h"
 #include <functional>
 
-
 #include "config.h"
 
 namespace MapleLeaf {
@@ -28,8 +27,8 @@ Graphics::Graphics()
 }
 Graphics::~Graphics()
 {
-    auto graphicsQueue = logicalDevice->GetSubmitGraphicsQueue();
-    auto computeQueue  = logicalDevice->GetSubmitComputeQueue();
+    auto graphicsQueue = logicalDevice->GetGraphicsQueue();
+    auto computeQueue  = logicalDevice->GetComputeQueue();
 
     CheckVk(vkQueueWaitIdle(graphicsQueue));
     CheckVk(vkQueueWaitIdle(computeQueue));
@@ -181,6 +180,7 @@ void Graphics::ResetRenderStages()
 
         for (const auto& renderStage : renderer->renderStages) {
             renderStage->Rebuild(*swapchain);
+            if (renderStage->HasSwapchain()) Imgui::Get()->SetupImGui(*renderStage->GetRenderpass());
         }
     }
     RecreateAttachmentsMap();
@@ -240,7 +240,7 @@ void Graphics::RecreateCommandBuffers()
 
 void Graphics::RecreatePass(RenderStage& renderStage)
 {
-    auto graphicsQueue = logicalDevice->GetSubmitGraphicsQueue();
+    auto graphicsQueue = logicalDevice->GetGraphicsQueue();
 
     VkExtent2D displayExtent = {Devices::Get()->GetWindow()->GetSize().x, Devices::Get()->GetWindow()->GetSize().y};
 
