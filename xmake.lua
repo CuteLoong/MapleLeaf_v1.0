@@ -25,7 +25,7 @@ set_configvar("MAPLELEAF_PIPELINE_DEBUG", false)
 set_configvar("MAPLELEAF_VALIDATION_DEBUG", true)
 set_configvar("MAPLELEAF_DESCRIPTOR_DEBUG", false)
 set_configvar("MAPLELEAF_RENDERSTAGE_DEBUG", false)
-set_configvar("MAPLELEAF_RAY_TRACING", false)
+set_configvar("MAPLELEAF_RAY_TRACING", true)
 set_configvar("SHADOW_MAP_SIZE", 1024)
 set_configdir("Config") 
 add_configfiles("./config.h.in")
@@ -72,7 +72,10 @@ add_includedirs(
 "Core/DerivedScene/GPUScene"
 )
 
+--Add RenderPass specific include directories
 add_includedirs(
+"RenderPass/RayTracing",
+"RenderPass/RayTracing",
 "RenderPass/Shadow",
 "RenderPass",
 "RenderPass/GBuffer",
@@ -84,7 +87,10 @@ add_includedirs(
 "RenderPass/ToneMapping",
 "RenderPass/Resolved"
 )
+
+-- Add Renderer specific include directories
 add_includedirs(
+"Renderer/RayTracingRenderer",
 "Renderer/DeferredRenderer",
 "Renderer/DefaultRenderer",
 "Renderer/SkyboxMappingRenderer"

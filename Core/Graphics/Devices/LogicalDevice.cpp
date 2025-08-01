@@ -14,6 +14,7 @@ const std::vector<const char*> LogicalDevice::DeviceExtensions = {VK_KHR_SWAPCHA
                                                                   VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
                                                                   VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,
                                                                   VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+                                                                  VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
 #ifdef MAPLELEAF_RAY_TRACING
                                                                   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
                                                                   VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
@@ -153,10 +154,14 @@ void LogicalDevice::CreateLogicalDevice()
     else
         Log::Warning("Selected GPU does not support shaderInt64!\n");
 
+    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features{};
+    robustness2Features.sType          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+    robustness2Features.nullDescriptor = VK_TRUE;
+
     VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures = {};
     dynamicRenderingFeatures.sType                                       = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
     dynamicRenderingFeatures.dynamicRendering                            = VK_TRUE;
-    dynamicRenderingFeatures.pNext                                       = nullptr;
+    dynamicRenderingFeatures.pNext                                       = &robustness2Features;
 
     VkPhysicalDeviceShaderAtomicFloatFeaturesEXT shaderAtomicFloatFeatures = {};
     shaderAtomicFloatFeatures.sType                                        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;

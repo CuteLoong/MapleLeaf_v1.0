@@ -26,6 +26,9 @@ public:
     const Image2d*   GetSkyboxEqMap() { return skybox->GetImage2d(); }
     const Transform* GetTransform() { return skybox->GetTransform(); }
 
+    const Image2d*   GetImage2dPlaceholder() const { return Image2dPlaceholder.get(); }
+    const ImageCube* GetImageCubePlaceholder() const { return ImageCubePlaceholder.get(); }
+
     bool WaitMapping() const;
     void SetMapped(bool mapped) { skybox->SetMapped(mapped); }
 
@@ -43,6 +46,9 @@ private:
     std::unique_ptr<Image2d>   brdf;
     std::unique_ptr<ImageCube> irradiance;
     std::unique_ptr<ImageCube> prefiltered;
+
+    std::unique_ptr<Image2d>   Image2dPlaceholder;
+    std::unique_ptr<ImageCube> ImageCubePlaceholder;
 
     static std::unique_ptr<Image2d>   ComputeBRDF(uint32_t size);
     static std::unique_ptr<ImageCube> ComputeIrradiance(const ImageCube* source, uint32_t size);

@@ -123,22 +123,45 @@ void {renderer_name}Renderer::Update() {{}}
     with open(xmake_lua_path, "r") as file:
         xmake_content = file.read()
     
-    # Look for the renderer include directories section
-    renderer_include_pattern = r'add_includedirs\(\s*"Renderer\/DefaultRenderer"'
-    if re.search(renderer_include_pattern, xmake_content):
-        # Add the new renderer to include paths
-        modified_xmake = re.sub(
-            renderer_include_pattern,
-            f'add_includedirs(\n"Renderer/{renderer_name}Renderer",\n"Renderer/DefaultRenderer"',
-            xmake_content
-        )
+    # Look for the renderer include directories section with more flexible pattern
+    # First, find the comment line
+    comment_pattern = r'-- Add Renderer specific include directories'
+    comment_match = re.search(comment_pattern, xmake_content)
+    
+    if comment_match:
+        # Find the add_includedirs block that follows the comment
+        start_pos = comment_match.end()
+        remaining_content = xmake_content[start_pos:]
         
-        with open(xmake_lua_path, "w") as file:
-            file.write(modified_xmake)
+        # Look for the add_includedirs block
+        includedirs_pattern = r'(add_includedirs\(\s*\n)((?:"Renderer/[^"]*",?\s*\n)*)'
+        includedirs_match = re.search(includedirs_pattern, remaining_content, re.MULTILINE)
         
-        print(f"Updated xmake.lua to include {renderer_name}Renderer path")
+        if includedirs_match:
+            # Calculate absolute positions
+            abs_start = start_pos + includedirs_match.start()
+            abs_end = start_pos + includedirs_match.end()
+            
+            opening_part = includedirs_match.group(1)
+            paths_part = includedirs_match.group(2)
+            
+            # Add new renderer path at the beginning
+            new_include = f'"Renderer/{renderer_name}Renderer",\n'
+            modified_paths = new_include + paths_part
+            
+            # Reconstruct the content
+            modified_xmake = (xmake_content[:abs_start] + 
+                            opening_part + modified_paths + ')' +
+                            xmake_content[abs_end + 1:])  # +1 to skip the closing )
+            
+            with open(xmake_lua_path, "w") as file:
+                file.write(modified_xmake)
+            
+            print(f"Updated xmake.lua to include {renderer_name}Renderer path")
+        else:
+            print("Warning: Could not find add_includedirs block after renderer comment")
     else:
-        print("Warning: Could not find renderer include section in xmake.lua")
+        print("Warning: Could not find renderer include comment in xmake.lua")
     
     print(f"\nRenderer {renderer_name}Renderer successfully created!")
     print(f"You might want to create appropriate subrenders for this renderer in the RenderPass directory.")
@@ -199,32 +222,57 @@ def remove_renderer(renderer_name):
     # Update xmake.lua to remove the renderer path
     xmake_lua_path = project_root / "xmake.lua"
     with open(xmake_lua_path, "r") as file:
-        xmake_content = file.readlines()
+        xmake_content = file.read()
     
-    # Remove the renderer from include paths while preserving indentation
-    pattern = re.compile(fr'^\s*"Renderer/{renderer_name}Renderer",?\s*\n')
-    filtered_xmake = []
-    comma_fixed = False
+    # Find the renderer include directories section and handle comma removal
+    renderer_include_pattern = r'(-- Add Renderer specific include directories\s*\n)(add_includedirs\(\s*\n(?:"Renderer/[^"]*",?\s*\n)*)\)'
     
-    for i, line in enumerate(xmake_content):
-        if pattern.match(line):
-            # Skip this line as it contains our renderer path
-            # Handle comma fixing like above
-            if i > 0 and i < len(xmake_content) - 1:
-                prev_line = xmake_content[i-1]
-                next_line = xmake_content[i+1]
-                if prev_line.strip().endswith(',') and not next_line.strip().endswith(',') and not next_line.strip().endswith(')'):
-                    # Remove the trailing comma from the previous line
-                    if not comma_fixed:
-                        filtered_xmake[-1] = prev_line.rstrip().rstrip(',') + '\n'
-                        comma_fixed = True
-        else:
-            filtered_xmake.append(line)
-    
-    with open(xmake_lua_path, "w") as file:
-        file.writelines(filtered_xmake)
-    
-    print(f"Updated xmake.lua to remove {renderer_name}Renderer path")
+    match = re.search(renderer_include_pattern, xmake_content, re.MULTILINE | re.DOTALL)
+    if match:
+        comment_part = match.group(1)
+        includedirs_part = match.group(2)
+        
+        # Split into lines to handle comma logic
+        lines = includedirs_part.split('\n')
+        filtered_lines = []
+        
+        for i, line in enumerate(lines):
+            # Check if this line contains our renderer
+            if f'"Renderer/{renderer_name}Renderer"' in line:
+                # Skip this line, but check comma handling
+                continue
+            else:
+                filtered_lines.append(line)
+        
+        # Fix comma issues - ensure the last non-empty line before closing parenthesis doesn't have a comma
+        if filtered_lines:
+            # Find the last line that contains a renderer path
+            for i in range(len(filtered_lines) - 1, -1, -1):
+                if '"Renderer/' in filtered_lines[i] and filtered_lines[i].strip():
+                    # Remove trailing comma from the last renderer line
+                    filtered_lines[i] = filtered_lines[i].rstrip().rstrip(',')
+                    break
+        
+        modified_includedirs = '\n'.join(filtered_lines)
+        
+        modified_xmake = xmake_content.replace(
+            match.group(0),
+            comment_part + modified_includedirs + ')'
+        )
+        
+        with open(xmake_lua_path, "w") as file:
+            file.write(modified_xmake)
+        
+        print(f"Updated xmake.lua to remove {renderer_name}Renderer path")
+    else:
+        # Fallback to simple pattern matching
+        renderer_path_pattern = fr'"Renderer/{renderer_name}Renderer",?\s*\n'
+        modified_xmake = re.sub(renderer_path_pattern, '', xmake_content)
+        
+        with open(xmake_lua_path, "w") as file:
+            file.write(modified_xmake)
+        
+        print(f"Updated xmake.lua to remove {renderer_name}Renderer path (fallback method)")
     
     print(f"\nRenderer {renderer_name}Renderer successfully removed!")
     print("Remember to update MainApp.cpp if it was using this renderer.")

@@ -8,7 +8,7 @@
 namespace MapleLeafApp {
 SkyboxMappingRenderer::SkyboxMappingRenderer()
 {
-    std::vector<Attachment>  skyboxMappingAttachments = {{0, "MappedSkybox", Attachment::Type::Image, false, VK_FORMAT_R32G32B32A32_SFLOAT}};
+    std::vector<Attachment>  skyboxMappingAttachments = {{0, "MappedSkybox", Attachment::Type::FrameBuffer, false, VK_FORMAT_R32G32B32A32_SFLOAT}};
     std::vector<SubpassType> subpasses                = {{0, {}, {0}}};
     AddRenderStage(std::make_unique<RenderStage>(RenderStage::Type::MONO, skyboxMappingAttachments, subpasses, Viewport({1024, 1024})));
 

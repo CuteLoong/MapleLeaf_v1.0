@@ -13,7 +13,12 @@ LightSystem::LightSystem()
     , pointLights(1, PointLight())
     , directionalLights(1, DirectionalLight())
     , areaLights(1, AreaLight())
-{}
+{
+    storagePointLights = std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(pointLights.size() * sizeof(PointLight)), pointLights.data());
+    storageDirectionalLights =
+        std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(directionalLights.size() * sizeof(DirectionalLight)), directionalLights.data());
+    storageAreaLights = std::make_unique<StorageBuffer>(static_cast<VkDeviceSize>(areaLights.size() * sizeof(AreaLight)), areaLights.data());
+}
 
 void LightSystem::Update()
 {

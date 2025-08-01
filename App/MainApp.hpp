@@ -11,6 +11,7 @@ enum class RendererType
 {
     Default,
     Deferred,
+    RayTracing,
     Else
 };
 

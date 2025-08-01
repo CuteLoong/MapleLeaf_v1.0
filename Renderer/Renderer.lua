@@ -1,6 +1,7 @@
 target("Renderer")
     set_kind("static")
     add_files(
+    "RayTracingRenderer/*.cpp",
     "DeferredRenderer/*.cpp",
     "DefaultRenderer/*.cpp", 
     "SkyboxMappingRenderer/*.cpp"

@@ -15,6 +15,7 @@ public:
     enum class Type
     {
         Image,
+        FrameBuffer,
         Depth,
         Swapchain
     };

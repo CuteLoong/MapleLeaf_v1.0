@@ -6,6 +6,7 @@
 #include "Imgui.hpp"
 #include "Inputs.hpp"
 #include "Log.hpp"
+#include "RayTracingRenderer.hpp"
 #include "SceneBuilder.hpp"
 #include "Scenes.hpp"
 #include "SkyboxMappingRenderer.hpp"
@@ -42,13 +43,13 @@ MainApp::~MainApp() {}
 void MainApp::Start()
 {
     Devices::Get()->GetWindow()->SetTitle("MapleLeaf");
+    Graphics::Get()->SetRenderer(std::make_unique<DefaultRenderer>());
 
 #ifdef MAPLELEAF_RAY_TRACING
-// Ray tracing is not supported in this simplified version
-#    error "Ray tracing renderers have been removed in this simplified version"
+    // Ray tracing is not supported in this simplified version
+    currentRenderer = RendererType::Default;   // Update tracker to match
 #else
     // Use our default renderer
-    Graphics::Get()->SetRenderer(std::make_unique<DefaultRenderer>());
     currentRenderer = RendererType::Default;   // Update tracker to match
 #endif
 
@@ -75,12 +76,13 @@ void MainApp::RegisterImGui()
         }
 
         ImGui::SetNextItemWidth(150.0f);
-        static const char* rendererNames[] = {"Default", "Deferred"};
+        static const char* rendererNames[] = {"Default", "Deferred", "Ray Tracing"};
         int                currentItem     = static_cast<int>(selectedRenderer);
         if (ImGui::Combo("Renderer", &currentItem, rendererNames, IM_ARRAYSIZE(rendererNames))) {
             switch (currentItem) {
             case 0: selectedRenderer = RendererType::Default; break;
             case 1: selectedRenderer = RendererType::Deferred; break;
+            case 2: selectedRenderer = RendererType::RayTracing; break;
             default: Log::Error("Unknown renderer type selected: ", currentItem); return;
             }
         }
@@ -128,6 +130,12 @@ void MainApp::Update()
                 else if (selectedRenderer == RendererType::Deferred) {
                     Graphics::Get()->SetRenderer(std::make_unique<DeferredRenderer>());
                     currentRenderer   = RendererType::Deferred;
+                    exchangedPipeline = true;
+                    Imgui::Get()->ClearCustomWindows();
+                }
+                else if (selectedRenderer == RendererType::RayTracing) {
+                    Graphics::Get()->SetRenderer(std::make_unique<RayTracingRenderer>());
+                    currentRenderer   = RendererType::RayTracing;
                     exchangedPipeline = true;
                     Imgui::Get()->ClearCustomWindows();
                 }

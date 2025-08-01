@@ -60,9 +60,13 @@ public:
     bool operator!=(const Vertex3D& rhs) const { return !operator==(rhs); }
 
     glm::vec3 position;
+    float     padding_1;
     glm::vec2 uv;
+    glm::vec2 padding_2;
     glm::vec3 normal;
+    float     padding_3;
     glm::vec3 tangent;
+    float     padding_4;
 };
 }   // namespace MapleLeaf
 

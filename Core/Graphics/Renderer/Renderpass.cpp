@@ -25,7 +25,8 @@ Renderpass::Renderpass(const LogicalDevice& logicalDevice, const RenderStage& re
         attachmentDescription.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;   // We don't care about initial layout of the attachment.
 
         switch (attachment.GetType()) {
-        case Attachment::Type::Image:
+        case Attachment::Type::Image: continue;
+        case Attachment::Type::FrameBuffer:
             attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;   // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             attachmentDescription.format      = attachment.GetFormat();
             break;

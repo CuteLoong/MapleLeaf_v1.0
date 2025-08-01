@@ -34,7 +34,7 @@ public:
             , whiteScale(whiteScale)
         {}
     };
-    explicit ToneMappingSubrender(const Pipeline::Stage& pipelineStage, ToneMappingInfo toneMappingInfo = ToneMappingInfo());
+    explicit ToneMappingSubrender(const Pipeline::Stage& pipelineStage, std::string name, ToneMappingInfo toneMappingInfo = ToneMappingInfo());
 
     void PreRender(const CommandBuffer& commandBuffer) override;
     void Render(const CommandBuffer& commandBuffer) override;
@@ -47,6 +47,7 @@ private:
     DescriptorsHandler descriptorSet;
     UniformHandler     uniformToneMapping;
 
+    std::string     toneMappedTextureName;
     ToneMappingInfo toneMappingInfo;
 };
 }   // namespace MapleLeaf

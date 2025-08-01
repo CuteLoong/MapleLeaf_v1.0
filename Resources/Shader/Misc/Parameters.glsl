@@ -5,9 +5,13 @@
 
 struct Vertex {
     vec3 position;
+    float padding_1;
     vec2 texCoord;
+    vec2 padding_2;
     vec3 normal;
+    float padding_3;
     vec3 tangent;
+    float padding_4;
 };
 
 struct GPUMaterialData

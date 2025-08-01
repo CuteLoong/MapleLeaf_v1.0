@@ -1,6 +1,7 @@
 target("RenderPass")
     set_kind("static")
     add_files(
+    "RayTracing/*.cpp",
     "Skybox/*.cpp",
     "GBuffer/*.cpp",
     "Shadow/*.cpp",

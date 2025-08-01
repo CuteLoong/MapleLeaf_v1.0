@@ -3,8 +3,9 @@
 #include "Imgui.hpp"
 
 namespace MapleLeaf {
-ToneMappingSubrender::ToneMappingSubrender(const Pipeline::Stage& pipelineStage, ToneMappingInfo toneMappingInfo)
+ToneMappingSubrender::ToneMappingSubrender(const Pipeline::Stage& pipelineStage, std::string name, ToneMappingInfo toneMappingInfo)
     : Subrender(pipelineStage)
+    , toneMappedTextureName(std::move(name))
     , toneMappingInfo(toneMappingInfo)
     , pipeline(pipelineStage, {"Shader/ToneMapping/ToneMapping.vert", "Shader/ToneMapping/ToneMapping.frag"}, {}, {}, PipelineGraphics::Mode::Polygon,
                PipelineGraphics::Depth::None)
@@ -53,7 +54,7 @@ void ToneMappingSubrender::Render(const CommandBuffer& commandBuffer)
     uniformToneMapping.Push("type", static_cast<int>(toneMappingInfo.type));
 
     descriptorSet.Push("uniformToneMapping", uniformToneMapping);
-    descriptorSet.Push("ResolvedImage", Graphics::Get()->GetAttachment("resolve"));
+    descriptorSet.Push("ResolvedImage", Graphics::Get()->GetAttachment(toneMappedTextureName.c_str()));
 
     if (!descriptorSet.Update(pipeline)) return;
     pipeline.BindPipeline(commandBuffer);

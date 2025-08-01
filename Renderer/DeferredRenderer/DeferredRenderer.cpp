@@ -22,22 +22,22 @@ DeferredRenderer::DeferredRenderer()
 
     // Render Pass for G-Buffer
     std::vector<Attachment>  GBufferAttachments = {{0, "depth", Attachment::Type::Depth, false},
-                                                   {1, "position", Attachment::Type::Image, false, VK_FORMAT_R32G32B32A32_SFLOAT},
-                                                   {2, "diffuse", Attachment::Type::Image, false, VK_FORMAT_R32G32B32A32_SFLOAT},
-                                                   {3, "normal", Attachment::Type::Image, false, VK_FORMAT_R32G32B32A32_SFLOAT},
-                                                   {4, "material", Attachment::Type::Image, false, VK_FORMAT_R32G32B32A32_SFLOAT},
-                                                   {5, "motionVector", Attachment::Type::Image, false, VK_FORMAT_R32G32_SFLOAT},
-                                                   {6, "instanceId", Attachment::Type::Image, false, VK_FORMAT_R32_SFLOAT, VK_FILTER_NEAREST}};
+                                                   {1, "position", Attachment::Type::FrameBuffer, false, VK_FORMAT_R32G32B32A32_SFLOAT},
+                                                   {2, "diffuse", Attachment::Type::FrameBuffer, false, VK_FORMAT_R32G32B32A32_SFLOAT},
+                                                   {3, "normal", Attachment::Type::FrameBuffer, false, VK_FORMAT_R32G32B32A32_SFLOAT},
+                                                   {4, "material", Attachment::Type::FrameBuffer, false, VK_FORMAT_R32G32B32A32_SFLOAT},
+                                                   {5, "motionVector", Attachment::Type::FrameBuffer, false, VK_FORMAT_R32G32_SFLOAT},
+                                                   {6, "instanceId", Attachment::Type::FrameBuffer, false, VK_FORMAT_R32_SFLOAT, VK_FILTER_NEAREST}};
     std::vector<SubpassType> GBufferSubpasses   = {{0, {}, {1, 2, 3, 4}}, {1, {}, {0, 1, 2, 3, 4, 5, 6}}};
     AddRenderStage(std::make_unique<RenderStage>(RenderStage::Type::MONO, GBufferAttachments, GBufferSubpasses));
 
     // Render Pass for Lighting
-    std::vector<Attachment>  LightingAttachments = {{0, "lighting", Attachment::Type::Image, false, VK_FORMAT_R32G32B32A32_SFLOAT}};
+    std::vector<Attachment>  LightingAttachments = {{0, "lighting", Attachment::Type::FrameBuffer, false, VK_FORMAT_R32G32B32A32_SFLOAT}};
     std::vector<SubpassType> LightingSubpasses   = {{0, {}, {0}}};
     AddRenderStage(std::make_unique<RenderStage>(RenderStage::Type::MONO, LightingAttachments, LightingSubpasses));
 
     // Render Pass for Resolve
-    std::vector<Attachment>  ResolveAttachments = {{0, "resolve", Attachment::Type::Image, false, VK_FORMAT_R32G32B32A32_SFLOAT}};
+    std::vector<Attachment>  ResolveAttachments = {{0, "resolve", Attachment::Type::FrameBuffer, false, VK_FORMAT_R32G32B32A32_SFLOAT}};
     std::vector<SubpassType> ResolveSubpasses   = {{0, {}, {0}}};
     AddRenderStage(std::make_unique<RenderStage>(RenderStage::Type::MONO, ResolveAttachments, ResolveSubpasses));
 
@@ -54,7 +54,7 @@ void DeferredRenderer::Start()
     AddSubrender<GBufferSubrender>({1, 1});
     AddSubrender<DeferredSubrender>({2, 0});
     AddSubrender<ResolvedSubrender>({3, 0});
-    AddSubrender<ToneMappingSubrender>({4, 0});
+    AddSubrender<ToneMappingSubrender>({4, 0}, "resolve");
     AddSubrender<ImguiSubrender>({4, 1});
     // AddSubrender<DefaultSubrender>({4, 0});
     // AddSubrender<ImguiSubrender>({4, 1});

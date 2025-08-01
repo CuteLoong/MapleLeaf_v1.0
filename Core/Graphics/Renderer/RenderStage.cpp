@@ -18,7 +18,8 @@ RenderStage::RenderStage(Type stageType, std::vector<Attachment> images, std::ve
         VkClearValue clearValue = {};
 
         switch (image.GetType()) {
-        case Attachment::Type::Image:
+        case Attachment::Type::Image: continue;
+        case Attachment::Type::FrameBuffer:
             clearValue.color = {{image.GetClearColour().r, image.GetClearColour().g, image.GetClearColour().b, image.GetClearColour().a}};
             for (const auto& subpass : this->subpasses) {
                 if (auto subpassBindings = subpass.GetInputAttachmentBindings();
@@ -95,7 +96,7 @@ void RenderStage::Rebuild(const Swapchain& swapchain)
     for (const auto& image : attachments) {
         if (image.GetType() == Attachment::Type::Depth)
             where = descriptors.insert(where, {image.GetName(), depthStencil.get()});
-        else if (image.GetType() == Attachment::Type::Image)
+        else if (image.GetType() == Attachment::Type::Image || image.GetType() == Attachment::Type::FrameBuffer)
             where = descriptors.insert(where, {image.GetName(), framebuffers->GetAttachment(image.GetBinding())});
     }
 

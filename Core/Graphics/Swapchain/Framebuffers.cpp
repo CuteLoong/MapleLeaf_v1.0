@@ -17,6 +17,16 @@ Framebuffers::Framebuffers(const LogicalDevice& logicalDevice, const Swapchain& 
             imageAttachments.emplace_back(
                 std::make_unique<Image2d>(extent,
                                           attachment.GetFormat(),
+                                          VK_IMAGE_LAYOUT_GENERAL,
+                                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+                                          attachment.GetFilter(),
+                                          VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                                          attachmentSamples));
+            break;
+        case Attachment::Type::FrameBuffer:
+            imageAttachments.emplace_back(
+                std::make_unique<Image2d>(extent,
+                                          attachment.GetFormat(),
                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
                                           attachment.GetFilter(),
@@ -35,7 +45,8 @@ Framebuffers::Framebuffers(const LogicalDevice& logicalDevice, const Swapchain& 
 
         for (const auto& attachment : renderStage.GetAttachments()) {
             switch (attachment.GetType()) {
-            case Attachment::Type::Image: attachments.emplace_back(GetAttachment(attachment.GetBinding())->GetView()); break;
+            case Attachment::Type::Image: continue;
+            case Attachment::Type::FrameBuffer: attachments.emplace_back(GetAttachment(attachment.GetBinding())->GetView()); break;
             case Attachment::Type::Depth: attachments.emplace_back(depthStencil.GetView()); break;
             case Attachment::Type::Swapchain: attachments.emplace_back(swapchain.GetImageViews().at(i)); break;
             }

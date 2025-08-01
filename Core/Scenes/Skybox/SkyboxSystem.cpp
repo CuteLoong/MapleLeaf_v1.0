@@ -13,6 +13,9 @@ SkyboxSystem::SkyboxSystem()
 {
     brdf   = ComputeBRDF(512);
     loaded = false;
+
+    Image2dPlaceholder   = std::make_unique<Image2d>(glm::uvec2(1), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL);
+    ImageCubePlaceholder = std::make_unique<ImageCube>(glm::ivec2(1), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_GENERAL);
 }
 
 bool SkyboxSystem::WaitMapping() const

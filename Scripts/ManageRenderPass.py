@@ -198,31 +198,52 @@ void main()
         
         print(f"Updated RenderPass.lua to include {renderpass_name}")
     
-    # Update xmake.lua to include the new renderpass path
+    # ALSO update xmake.lua to include the new renderpass path
     xmake_lua_path = project_root / "xmake.lua"
     with open(xmake_lua_path, "r") as file:
         xmake_content = file.read()
     
     # Look for the renderpass include directories section
-    renderpass_include_pattern = r'add_includedirs\(\s*\n"RenderPass"'
-    if re.search(renderpass_include_pattern, xmake_content):
-        # Add the new renderpass to include paths
-        modified_xmake = re.sub(
-            renderpass_include_pattern,
-            f'add_includedirs(\n"RenderPass/{renderpass_name}",\n"RenderPass"',
-            xmake_content
-        )
+    comment_pattern = r'--Add RenderPass specific include directories'
+    comment_match = re.search(comment_pattern, xmake_content)
+    
+    if comment_match:
+        # Find the add_includedirs block that follows the comment
+        start_pos = comment_match.end()
+        remaining_content = xmake_content[start_pos:]
         
-        with open(xmake_lua_path, "w") as file:
-            file.write(modified_xmake)
+        # Look for the add_includedirs block
+        includedirs_pattern = r'(add_includedirs\(\s*\n)((?:"RenderPass/[^"]*",?\s*\n)*)'
+        includedirs_match = re.search(includedirs_pattern, remaining_content, re.MULTILINE)
         
-        print(f"Updated xmake.lua to include {renderpass_name} path")
+        if includedirs_match:
+            # Calculate absolute positions
+            abs_start = start_pos + includedirs_match.start()
+            abs_end = start_pos + includedirs_match.end()
+            
+            opening_part = includedirs_match.group(1)
+            paths_part = includedirs_match.group(2)
+            
+            # Add new renderpass path at the beginning
+            new_include = f'"RenderPass/{renderpass_name}",\n'
+            modified_paths = new_include + paths_part
+            
+            # Reconstruct the content
+            modified_xmake = (xmake_content[:abs_start] + 
+                            opening_part + modified_paths + '"' +
+                            xmake_content[abs_end + 1:])  # +1 to skip the closing )
+            
+            with open(xmake_lua_path, "w") as file:
+                file.write(modified_xmake)
+            
+            print(f"Updated xmake.lua to include {renderpass_name} path")
+        else:
+            print("Warning: Could not find add_includedirs block after renderpass comment")
     else:
-        print("Warning: Could not find renderpass include section in xmake.lua")
+        print("Warning: Could not find renderpass include comment in xmake.lua")
     
     print(f"\nRenderPass {renderpass_name} successfully created!")
-    print(f"Basic shader files have been created in {shader_dir}")
-    print("Remember to create a Renderer that uses this RenderPass or add it to an existing Renderer")
+    print("Remember to add appropriate subrender logic and update your renderer to use this renderpass.")
     return True
 
 def remove_renderpass(renderpass_name):
@@ -291,38 +312,71 @@ def remove_renderpass(renderpass_name):
     
     print(f"Updated RenderPass.lua to remove {renderpass_name}")
     
-    # Update xmake.lua to remove the renderpass path
+    # ALSO update xmake.lua to remove the renderpass path
     xmake_lua_path = project_root / "xmake.lua"
     with open(xmake_lua_path, "r") as file:
-        xmake_content = file.readlines()
+        xmake_content = file.read()
     
-    # Remove the renderpass from include paths while preserving indentation
-    pattern = re.compile(fr'^\s*"RenderPass/{renderpass_name}",?\s*\n')
-    filtered_xmake = []
-    comma_fixed = False
+    # Find the renderpass include directories section and handle comma removal
+    comment_pattern = r'--Add RenderPass specific include directories'
+    comment_match = re.search(comment_pattern, xmake_content)
     
-    for i, line in enumerate(xmake_content):
-        if pattern.match(line):
-            # Skip this line as it contains our renderpass path
-            # Handle comma fixing like above
-            if i > 0 and i < len(xmake_content) - 1:
-                prev_line = xmake_content[i-1]
-                next_line = xmake_content[i+1]
-                if prev_line.strip().endswith(',') and not next_line.strip().endswith(',') and not next_line.strip().endswith(')'):
-                    # Remove the trailing comma from the previous line
-                    if not comma_fixed:
-                        filtered_xmake[-1] = prev_line.rstrip().rstrip(',') + '\n'
-                        comma_fixed = True
+    if comment_match:
+        start_pos = comment_match.end()
+        remaining_content = xmake_content[start_pos:]
+        
+        includedirs_pattern = r'(add_includedirs\(\s*\n)((?:"RenderPass/[^"]*",?\s*\n)*)\)'
+        includedirs_match = re.search(includedirs_pattern, remaining_content, re.MULTILINE | re.DOTALL)
+        
+        if includedirs_match:
+            abs_start = start_pos + includedirs_match.start()
+            abs_end = start_pos + includedirs_match.end()
+            
+            opening_part = includedirs_match.group(1)
+            paths_part = includedirs_match.group(2)
+            
+            # Split into lines to handle comma logic
+            lines = paths_part.split('\n')
+            filtered_lines = []
+            
+            for line in lines:
+                # Check if this line contains our renderpass
+                if f'"RenderPass/{renderpass_name}"' not in line:
+                    filtered_lines.append(line)
+            
+            # Fix comma issues - ensure the last non-empty line doesn't have a comma
+            if filtered_lines:
+                # Find the last line that contains a renderpass path
+                for i in range(len(filtered_lines) - 1, -1, -1):
+                    if '"RenderPass/' in filtered_lines[i] and filtered_lines[i].strip():
+                        # Remove trailing comma from the last renderpass line
+                        filtered_lines[i] = filtered_lines[i].rstrip().rstrip(',')
+                        break
+            
+            modified_paths = '\n'.join(filtered_lines)
+            
+            # Reconstruct the content
+            modified_xmake = (xmake_content[:abs_start] + 
+                            opening_part + modified_paths + ')' +
+                            xmake_content[abs_end + 1:])
+            
+            with open(xmake_lua_path, "w") as file:
+                file.write(modified_xmake)
+            
+            print(f"Updated xmake.lua to remove {renderpass_name} path")
         else:
-            filtered_xmake.append(line)
-    
-    with open(xmake_lua_path, "w") as file:
-        file.writelines(filtered_xmake)
-    
-    print(f"Updated xmake.lua to remove {renderpass_name} path")
+            print("Warning: Could not find add_includedirs block after renderpass comment")
+    else:
+        # Fallback to simple pattern matching
+        renderpass_path_pattern = fr'"RenderPass/{renderpass_name}",?\s*\n'
+        modified_xmake = re.sub(renderpass_path_pattern, '', xmake_content)
+        
+        with open(xmake_lua_path, "w") as file:
+            file.write(modified_xmake)
+        
+        print(f"Updated xmake.lua to remove {renderpass_name} path (fallback method)")
     
     print(f"\nRenderPass {renderpass_name} successfully removed!")
-    print("Remember to update any Renderers that were using this RenderPass.")
     return True
 
 def main():
