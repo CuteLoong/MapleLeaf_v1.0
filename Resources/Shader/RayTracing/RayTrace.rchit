@@ -234,7 +234,7 @@ void main()
 	prd.diffuseRadiance = Lo * prd.accDiffuseBRDF * 0.5f;
 	prd.specularRadiance = Lo * prd.accSpecularBRDF * 0.5f;
 
-	prd.accDiffuseBRDF *= DiffuseReflectionDisneyEval(diffuseColor, roughness, worldNormal, prd.nextDir.xyz, V) / pdf; // maybe a problity to select diffuse or specular
+	prd.accDiffuseBRDF *= DiffuseReflectionDisneyEval(diffuseColor, roughness, worldNormal, prd.nextDir.xyz, V); // maybe a problity to select diffuse or specular
 	prd.accSpecularBRDF *= SpecularReflectionMicrofacetEvalWeight(specularColor, roughness, worldNormal, prd.nextDir.xyz, V);
 
 	prd.done = 0;
