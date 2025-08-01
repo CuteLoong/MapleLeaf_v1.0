@@ -46,8 +46,8 @@ void RayTracingSubrender::PostRender(const CommandBuffer& commandBuffer)
     uniformGeometry.Push("indexAddress", gpuScene->GetIndexBuffer()->GetDeviceAddress());
 
     uniformFrameData.Push("frameID", camera->frameID);
-    uniformFrameData.Push("spp", 128);
-    uniformFrameData.Push("maxDepth", 5);
+    uniformFrameData.Push("spp", spp);
+    uniformFrameData.Push("maxDepth", maxDepth);
 
     descriptorSet.Push("topLevelAS", AS);
     descriptorSet.Push("uniformFrameData", uniformFrameData);
@@ -88,7 +88,13 @@ void RayTracingSubrender::PostRender(const CommandBuffer& commandBuffer)
 void RayTracingSubrender::RegisterImGui()
 {
     if (auto* imgui = Imgui::Get()) {
-        imgui->RegisterCustomWindow(typeid(*this).name(), [this]() { ImGui::SliderFloat("Wall Roughness", &wallroughness, 0.0f, 1.0f); });
+        imgui->RegisterCustomWindow(typeid(*this).name(), [this]() {
+            ImGui::SliderFloat("Wall Roughness", &wallroughness, 0.0f, 1.0f);
+
+            ImGui::SetNextItemWidth(100.0f);
+            ImGui::InputInt("Samples Per Pixel", &spp);
+            ImGui::InputInt("Max Depth", &maxDepth);
+        });
     }
 }
 }   // namespace MapleLeaf

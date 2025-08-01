@@ -26,5 +26,7 @@ private:
     DescriptorsHandler descriptorSet;
 
     float wallroughness = 0.5f;
+    int   spp           = 128;
+    int   maxDepth      = 5;
 };
 }   // namespace MapleLeaf
