@@ -109,8 +109,6 @@ void main()
 	vec4 baseColor = material.baseColor;
 	float metallic = material.metallic;
 	float roughness = material.roughness;
-	// if(prd.depth == 1 && gl_InstanceCustomIndexEXT != 5) return;
-	if(gl_InstanceCustomIndexEXT != 5) roughness = uniformScene.wallroughness;
 
 	int baseColorTex = material.baseColorTex;
 	int normalTex = material.normalTex;

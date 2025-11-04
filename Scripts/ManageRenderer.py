@@ -61,7 +61,6 @@ public:
     void Update() override;
 
 private:
-    Pipeline::Stage {renderer_name.lower()}Stage;
 }};
 }}   // namespace MapleLeafApp
 """

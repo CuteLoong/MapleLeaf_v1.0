@@ -61,10 +61,30 @@ vec3 DiffuseReflectionDisneyEvalWeight(vec3 diffuseColor, float roughness, vec3 
     float Fd90 = 0.5f + 2.0f * LoH * LoH * roughness;
     float Fd0 = 1.0f;
 
-    float wiScatter = evalFresnelSchlick(Fd0, Fd90, VoH);
-    float woScatter = evalFresnelSchlick(Fd0, Fd90, LoH);
+    float wiScatter = evalFresnelSchlick(Fd0, Fd90, VoN);
+    float woScatter = evalFresnelSchlick(Fd0, Fd90, NoL);
 
     return diffuseColor * wiScatter * woScatter;
+}
+
+vec3 DiffuseReflectionDisneyBRDF(vec3 diffuseColor, float roughness, vec3 N, vec3 L, vec3 V)
+{
+    vec3 H = normalize(L + V);
+    float VoH = clamp(dot(V, H), 0.0f, 1.0f);
+    float LoH = clamp(dot(L, H), 0.0f, 1.0f);
+
+    float VoN = clamp(dot(V, N), 0.0f, 1.0f);
+    float NoL = clamp(dot(N, L), 0.0f, 1.0f);
+
+    if(min(VoN, NoL) < MinCosTheta) return vec3(0.0f);
+
+    float Fd90 = 0.5f + 2.0f * LoH * LoH * roughness;
+    float Fd0 = 1.0f;
+
+    float wiScatter = evalFresnelSchlick(Fd0, Fd90, VoN);
+    float woScatter = evalFresnelSchlick(Fd0, Fd90, NoL);
+
+    return diffuseColor * INV_M_PI * wiScatter * woScatter;
 }
 
 
@@ -108,6 +128,31 @@ vec3 SpecularReflectionMicrofacetEvalWeight(vec3 specularColor, float roughness,
     vec3 F = evalFresnelSchlick(specularColor, vec3(1.0f), VoH);
 
     return G * F * VoH / (NoH * NoV); // brdf / pdf
+}
+
+vec3 SpecularReflectionBRDF(vec3 specularColor, float roughness, vec3 N, vec3 L, vec3 V)
+{
+    vec3 H = normalize(L + V);
+
+    float NoV = clamp(dot(N, V), 0.001f, 1.0f);
+    float NoL = clamp(dot(N, L), 0.001f, 1.0f);
+    float NoH = clamp(dot(N, H), 0.0f, 1.0f);
+    float VoH = clamp(dot(V, H), 0.0f, 1.0f);
+
+    if (NoL <= 0.0f || NoV <= 0.0f) {
+        return vec3(0.0f);
+    }
+    
+    float alpha = roughness * roughness;
+
+    float D = evalNdfGGX(alpha, NoH);
+    vec3  F = evalFresnelSchlick(specularColor, vec3(1.0f), VoH);
+    float G = evalMaskingSmithGGXCorrelated(alpha, NoV, NoL);
+
+    vec3 numerator = D * G * F;
+    float denominator = 4.0f * NoV * NoL; // * NoL
+    
+    return numerator / denominator;
 }
 
 vec3 SpecularReflectionMicrofacetEval(vec3 specularColor, float roughness,vec3 N, vec3 L, vec3 V)

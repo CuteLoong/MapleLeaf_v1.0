@@ -13,15 +13,6 @@
 #include "spirv_reflect.h"
 
 namespace MapleLeaf {
-const std::vector<const char*> Shader::BindelssLayouts = {"ImageSamplers",
-                                                          "MeshShadowMapping",
-                                                          "MeshRadianceMapping",
-                                                          "PrevMeshDepthMapping",
-                                                          "MeshDepthMapping",
-                                                          "PrevMeshRadianceMapping",
-                                                          "MeshMaxDepthMapping",
-                                                          "PrevMaxMeshDepthMapping"};
-
 class ShaderIncluder : public glslang::TShader::Includer
 {
 public:
