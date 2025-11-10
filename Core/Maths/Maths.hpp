@@ -13,6 +13,26 @@ class Maths
 {
 public:
     /**
+     * Generate a vector that is orthogonal to the input vector
+     * This can be used to invent a tangent frame for meshes that don't have real tangents/bitangents.
+     * @param[in] u Unit vector.
+     * @return v Unit vector that is orthogonal to u.
+     */
+    static glm::vec3 perp_stark(const glm::vec3& u)
+    {
+        // TODO: Validate this and look at numerical precision etc. Are there better ways to do it?
+        glm::vec3 a   = glm::abs(u);
+        uint32_t  uyx = (a.x - a.y) < 0 ? 1 : 0;
+        uint32_t  uzx = (a.x - a.z) < 0 ? 1 : 0;
+        uint32_t  uzy = (a.y - a.z) < 0 ? 1 : 0;
+        uint32_t  xm  = uyx & uzx;
+        uint32_t  ym  = (1 ^ xm) & uzy;
+        uint32_t  zm  = 1 ^ (xm | ym);   // 1 ^ (xm & ym)
+        glm::vec3 v   = glm::normalize(glm::cross(u, glm::vec3(xm, ym, zm)));
+        return v;
+    }
+
+    /**
      * Combines a seed into a hash and modifies the seed by the new hash.
      * @param seed The seed.
      * @param v The value to hash.

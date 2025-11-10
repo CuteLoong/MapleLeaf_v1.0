@@ -14,6 +14,7 @@ layout(set = 0, binding = 3) uniform UniformFrameData {
 #include <Misc/Camera.glsl>
 #include <Misc/RayTracingCommon.glsl>
 #include <Sampling/TinyEncryptionSample.glsl>
+#include <Sampling/LowDiscrepancy/HammersleySequence.glsl>
 
 layout(location = 0) rayPayloadEXT HitPayLoad prd;
 
@@ -24,8 +25,6 @@ void main()
     vec2 d = pixelUV * 2.0f - 1.0f;
     
     vec4 origin = camera.cameraPosition;
-    vec4 target = camera.invProjection * (vec4(d.x, d.y, -1.0f, 1.0f));
-    vec4 direction = normalize(camera.invView * vec4(normalize(target.xyz), 0.0));
 
     uint  rayFlags = gl_RayFlagsOpaqueEXT;
     float tMin     = 0.001;
@@ -35,22 +34,63 @@ void main()
     for(int i = 0; i < uniformFrameData.spp; i++) {
         uint seed = TinyEncryptionInit(gl_LaunchIDEXT.x + gl_LaunchSizeEXT.x * gl_LaunchIDEXT.y, camera.frameID + i);
 
-        prd.diffuseRadiance = vec3(0.0f);
+        vec4 target_center = camera.invProjection * (vec4(d.x, d.y, -1.0f, 1.0f));
+        vec4 direction_center = normalize(camera.invView * vec4(normalize(target_center.xyz), 0.0));
+
+        vec2 jitter = getHammersley(uint(i), uint(uniformFrameData.spp)) / vec2(gl_LaunchSizeEXT.xy) - vec2(0.5f) / vec2(gl_LaunchSizeEXT.xy);
+        vec4 target = camera.invProjection * (vec4(d.x + jitter.x, d.y + jitter.y, -1.0f, 1.0f));
+        vec4 direction = normalize(camera.invView * vec4(normalize(target.xyz), 0.0));
+
+        mat4 cov = mat4(0.0f);
+        float primal_spatial_variance = 1e-20;
+        float primal_angular_variance = 0.0000001; 
+        cov[0][0] = primal_spatial_variance;
+        cov[1][1] = primal_spatial_variance;
+        // cov[2][2] = primal_angular_variance;
+        // cov[3][3] = primal_angular_variance;
+
+        vec2 d_dx = vec2(2.0f / gl_LaunchSizeEXT.x, 0.0f);
+        vec2 d_dy = vec2(0.0f, 2.0f / gl_LaunchSizeEXT.y);
+
+        vec4 target_dx = camera.invProjection * (vec4(d.x + d_dx.x, d.y + d_dx.y, -1.0f, 1.0f));
+        vec4 target_dy = camera.invProjection * (vec4(d.x + d_dy.x, d.y + d_dy.y, -1.0f, 1.0f));
+
+        vec4 dir_dx = normalize(camera.invView * vec4(normalize(target_dx.xyz), 0.0));
+        vec4 dir_dy = normalize(camera.invView * vec4(normalize(target_dy.xyz), 0.0));
+        
+        vec3 dD_dx = dir_dx.xyz - direction_center.xyz;
+        vec3 dD_dy = dir_dy.xyz - direction_center.xyz;
+
+        vec3 W = direction_center.xyz; 
+        vec3 U = (abs(W.x) > 0.99) ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        U = normalize(cross(U, W));
+        vec3 V = cross(W, U);
+
+        float var = 1.0f / 3.0f;
+        float sppScale = max(0.125f, 1.0f / float(uniformFrameData.spp));        
+        vec2 dD_dx_local = vec2(dot(dD_dx, U), dot(dD_dx, V)) * sppScale;
+        vec2 dD_dy_local = vec2(dot(dD_dy, U), dot(dD_dy, V)) * sppScale;
+
+        cov[2][2] = (dD_dx_local.x * dD_dx_local.x + dD_dy_local.x * dD_dy_local.x) * var;
+        cov[2][3] = (dD_dx_local.x * dD_dx_local.y + dD_dy_local.x * dD_dy_local.y) * var;
+        cov[3][2] = (dD_dx_local.y * dD_dx_local.x + dD_dy_local.y * dD_dy_local.x) * var;
+        cov[3][3] = (dD_dx_local.y * dD_dx_local.y + dD_dy_local.y * dD_dy_local.y) * var;
+
         prd.depth = 0;
-        prd.specularRadiance = vec3(0.0f);
         prd.done = 1;
-        prd.accDiffuseBRDF = vec3(1.0f);
-        prd.accSpecularBRDF = vec3(1.0f);
+        prd.accBrdf = vec3(1.0f);
         prd.nextOrigin = origin;
         prd.nextDir = direction;
         prd.randomSeed = seed;
+        prd.covariance = cov;   
 
         vec3 rayDirection = prd.nextDir.xyz;
         vec3 rayOrigin = prd.nextOrigin.xyz;
 
         for(;;) {
+            prd.radiance = vec3(0.0f);
             traceRayEXT(topLevelAS, rayFlags, 0xFF, 0, 0, 0, rayOrigin, tMin, rayDirection, tMax, 0);
-            hitValue += prd.diffuseRadiance + prd.specularRadiance;
+            if(prd.depth == 1) hitValue += prd.radiance;
 
             prd.depth++;
 

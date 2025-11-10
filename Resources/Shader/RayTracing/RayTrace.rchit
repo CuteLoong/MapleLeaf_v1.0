@@ -1,5 +1,6 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
+#extension GL_EXT_ray_query : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_EXT_scalar_block_layout : enable
 #extension GL_GOOGLE_include_directive : enable
@@ -10,16 +11,20 @@
 #include <Misc/Constants.glsl>
 #include <Misc/Parameters.glsl>
 #include <Materials/Fresnel.glsl>
-#include <Materials/BRDF.glsl>
+#include <Materials/StandardBSDF.glsl>
 #include <Sampling/TinyEncryptionSample.glsl>
 #include <Lighting/Lighting.glsl>
 #include <Lighting/LTC.glsl>
+#include <Utils/ShadingFrame.glsl>
+#include <Lighting/EmissiveUniformSampler.glsl>
 
 layout(location = 0) rayPayloadInEXT HitPayLoad prd;
 hitAttributeEXT vec3 attribs;
 
 layout(buffer_reference, scalar) readonly buffer Vertices {Vertex v[]; };
 layout(buffer_reference, scalar) readonly buffer Indices {uint i[]; };
+
+layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;
 
 layout(set = 0, binding = 4, scalar) uniform UniformGeometry {
 	uint64_t vertexAddress;
@@ -32,8 +37,9 @@ layout(set=0, binding = 5) uniform UniformScene {
 	int pointLightsCount;
 	int directionalLightsCount;
 	int areaLightsCount;
+	int emissiveCount;
+	int emissiveTriangleCount;
 	int skyboxLoaded;
-	float wallroughness;
 } uniformScene;
 
 layout(set = 0, binding = 6) readonly buffer InstanceDatas
@@ -46,41 +52,186 @@ layout(set = 0, binding = 7) buffer MaterialDatas
     GPUMaterialData materialData[];
 } materialDatas;
 
-layout(set=0, binding = 8) buffer BufferPointLights {
+layout(set = 0, binding = 8) buffer EmissiveIDs
+{
+    int emissiveIDs[];
+} emissiveIDs;
+
+layout(set=0, binding = 9) buffer BufferPointLights {
 	PointLight lights[];
 } bufferPointLights;
 
-layout(set=0, binding = 9) buffer BufferDirectionalLights {
+layout(set=0, binding = 10) buffer BufferDirectionalLights {
 	DirectionalLight lights[];
 } bufferDirectionalLights;
 
-layout(set=0, binding = 10) buffer BufferAreaLights {
+layout(set=0, binding = 11) buffer BufferAreaLights {
 	AreaLight lights[];
 } bufferAreaLights;
 
+layout(set = 0, binding = 12) readonly buffer EmissiveTriangleDatas
+{
+    EmissiveTriangle triangles[];
+} emissiveTriangleDatas;
 
-layout(set=0, binding = 11) uniform sampler2D samplerBRDF;
-layout(set=0, binding = 12) uniform samplerCube samplerIrradiance;
-layout(set=0, binding = 13) uniform samplerCube samplerPrefiltered;
+layout(set=0, binding = 13) uniform sampler2D samplerBRDF;
+layout(set=0, binding = 14) uniform samplerCube samplerIrradiance;
+layout(set=0, binding = 15) uniform samplerCube samplerPrefiltered;
 
-layout(set=0, binding = 14) uniform sampler2D LTC1;
-layout(set=0, binding = 15) uniform sampler2D LTC2;
+layout(set=0, binding = 16) uniform sampler2D LTC1;
+layout(set=0, binding = 17) uniform sampler2D LTC2;
 
 layout(set = 1, binding = 0) uniform sampler2D ImageSamplers[];
 
-void generateBasis(vec3 N, out vec3 up, out vec3 right, out vec3 forward)
+void decomposition_2x2_symmetric(mat2 C_spatial, out float L1, out float L2, out vec2 v1, out vec2 v2)
 {
-    up = abs(N.z) < 0.999f ? vec3(0, 0, 1) : vec3(1, 0, 0);
-    right = normalize(cross(up, N));
-    forward = cross(N, right);
+	// [ a b ]
+    // [ b d ]
+    float a = C_spatial[0][0];
+    float b = C_spatial[0][1];
+    float d = C_spatial[1][1];
+
+	float T = a + d;       // Trace
+    float D = a * d - b * b; // Determinant
+
+	float T_over_2 = T * 0.5;
+    float discriminant = sqrt(max(T_over_2 * T_over_2 - D, 0.0));
+    
+    L1 = T_over_2 + discriminant;
+    L2 = T_over_2 - discriminant;
+
+    if (abs(b) < 1e-6) {
+        v1 = vec2(1.0, 0.0);
+        v2 = vec2(0.0, 1.0);
+    } else {
+        v1 = normalize(vec2(b, L1 - a));
+        v2 = normalize(vec2(b, L2 - a));
+    }
 }
 
-vec3 localToWorld(vec3 localVector, vec3 N)
+mat4 propagate_transport(mat4 sigma, float dist, float cos_theta)
 {
-	vec3 up, right, forward;
-	generateBasis(N, up, right, forward);
+	// [ 1 0 -d 0 ]
+    // [ 0 1 0 -d ]
+    // [ 0 0 1 0 ]
+    // [ 0 0 0 1 ]
+	float d = dist / max(cos_theta, 0.01);
 
-	return localVector.x * right + localVector.y * forward + localVector.z * N;
+	mat4 T_d_paper = mat4(
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        -d,0, 1, 0,
+        0, -d,0, 1
+    );
+
+	return T_d_paper * sigma * transpose(T_d_paper);
+}
+
+mat4 reflect_brdf(mat4 sigma, float roughness)
+{
+	// B = [ 0 0 0 0 ]
+    //     [ 0 0 0 0 ]
+    //     [ 0 0 b_u 0 ]
+    //     [ 0 0 0 b_v ]
+	float b = 1.0 / max(roughness * roughness, 1e-6);
+
+	mat4 B = mat4(0.0);
+    B[2][2] = b;
+    B[3][3] = b;
+
+	// V = [0 0 1 0; 0 0 0 1]
+    // U = transpose(V)
+    mat2 V_Sigma_U = mat2(sigma[2][2], sigma[2][3], sigma[3][2], sigma[3][3]);
+    mat2 B_2x2 = mat2(B[2][2], B[2][3], B[3][2], B[3][3]);
+    
+    mat2 mid_inv = inverse(B_2x2 + V_Sigma_U);
+    
+    mat4 Sigma_U = mat4(
+        0, 0, sigma[0][2], sigma[0][3],
+        0, 0, sigma[1][2], sigma[1][3],
+        0, 0, sigma[2][2], sigma[2][3],
+        0, 0, sigma[3][2], sigma[3][3]
+    );
+    
+    mat4 V_Sigma = mat4(
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        sigma[2][0], sigma[2][1], sigma[2][2], sigma[2][3],
+        sigma[3][0], sigma[3][1], sigma[3][2], sigma[3][3]
+    );
+    
+    mat4 U_mid_inv_V = mat4(0.0);
+    U_mid_inv_V[2][2] = mid_inv[0][0];
+    U_mid_inv_V[2][3] = mid_inv[0][1];
+    U_mid_inv_V[3][2] = mid_inv[1][0];
+    U_mid_inv_V[3][3] = mid_inv[1][1];
+
+	return sigma - Sigma_U * U_mid_inv_V * V_Sigma;
+}
+
+uint GetEmissiveTriangleCount()
+{
+	uint triCount = 0;
+	for(int i = 0; i < uniformScene.emissiveCount; i++)
+	{
+		int instanceID = emissiveIDs.emissiveIDs[i];
+		GPUInstanceData instanceData = instanceDatas.instanceData[instanceID];
+		uint indexCount = instanceData.indexCount;
+		triCount += indexCount / 3;
+	}
+	return triCount;
+}
+
+bool instanceIsLight(int instanceID)
+{
+	for(int i = 0; i < uniformScene.emissiveCount; i++)
+	{
+		if(emissiveIDs.emissiveIDs[i] == instanceID) return true;
+	}
+	return false;
+}
+
+bool sampleLight(vec3 u, const vec3 posW, const vec3 normalW, const bool upperHemisphere, out TriangleLightSample ls)
+{
+	float uLight = u.x;
+	uint triangleCount = uniformScene.emissiveTriangleCount;
+	if(triangleCount == 0) return false;
+	uint idx = min(uint(uLight * float(triangleCount)), triangleCount - 1);
+	float triangleSelectionPdf = 1.0f / float(triangleCount);
+	EmissiveTriangle tri = emissiveTriangleDatas.triangles[idx];
+
+	vec2 uTriangle = u.yz;
+	const vec3 barycentric = sample_triangle(uTriangle);
+	ls.posW = vec3(tri.posW[0] * barycentric.x + tri.posW[1] * barycentric.y + tri.posW[2] * barycentric.z);
+	vec3 toLight = ls.posW - posW;
+	const float distSqr = max(dot(toLight, toLight), FLT_MIN);
+	ls.dist = sqrt(distSqr);
+	ls.dir = toLight / ls.dist;
+	ls.normalW = tri.normal;
+
+	float cosTheta = dot(ls.normalW, -ls.dir);
+	if(upperHemisphere && cosTheta <= 0.0f) return false;
+	else cosTheta = abs(cosTheta);
+
+	vec2 texCoords = tri.texCoords[0] * barycentric.x + tri.texCoords[1] * barycentric.y + tri.texCoords[2] * barycentric.z;
+	uint materialID = tri.materialID;
+	GPUMaterialData material = materialDatas.materialData[materialID];
+	vec4 emissiveColor = material.emissiveColor;
+
+	ls.Le = emissiveColor.rgb * material.emissiveIntensity * M_1_PI;
+	float denom = max(FLT_MIN, cosTheta * tri.area);
+	ls.pdf = distSqr / denom * triangleSelectionPdf;
+	ls.uv = texCoords;
+
+	ls.Le /= ls.pdf;
+	return true;
+}
+
+float evalMIS(float n0, float p0, float n1, float p1)
+{
+	float q0 = n0 * p0;
+    float q1 = n1 * p1;
+    return q0 / (q0 + q1);
 }
 
 void main()
@@ -93,7 +244,7 @@ void main()
 	uint indexOffset = instanceData.indexOffset;
 	uint vertexOffset = instanceData.vertexOffset;
 
-	vec3 barycentrics = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
+	vec3 barycentrics = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);	
 	ivec3 index = ivec3(indices.i[indexOffset + gl_PrimitiveID * 3], indices.i[indexOffset + gl_PrimitiveID * 3 + 1], indices.i[indexOffset + gl_PrimitiveID * 3 + 2]);
 	Vertex v0 = vertices.v[vertexOffset + index.x];
 	Vertex v1 = vertices.v[vertexOffset + index.y];
@@ -101,11 +252,75 @@ void main()
 
 	vec3 position = v0.position * barycentrics.x + v1.position * barycentrics.y + v2.position * barycentrics.z;
 	vec3 normal = v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * barycentrics.z;
+	vec4 tangent = v0.tangent * barycentrics.x + v1.tangent * barycentrics.y + v2.tangent * barycentrics.z;
+	tangent = vec4(normalize(vec3(tangent.xyz * gl_WorldToObjectEXT)), sign(tangent.w));
 	vec2 texCoord = v0.texCoord * barycentrics.x + v1.texCoord * barycentrics.y + v2.texCoord * barycentrics.z;
 
 	vec3 worldPosition = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0f));
 	vec3 worldNormal = normalize(vec3(normal * gl_WorldToObjectEXT));
 
+	// Propagate the covariance matrix through the transport
+	float hit_dist = gl_HitTEXT;
+	float cos_theta_in = abs(dot(gl_WorldRayDirectionEXT, worldNormal));
+	mat4 propagated_covariance = propagate_transport(prd.covariance, hit_dist, cos_theta_in);
+
+	vec3 N = normalize(worldNormal);
+	vec3 T = normalize(tangent.xyz);
+	T = normalize(T - dot(T, N) * N);
+	vec3 B = -normalize(cross(N, T));
+	mat3 TBN = mat3(T, B, N);
+
+	mat2 Sigma_spatial = mat2(propagated_covariance[0][0], propagated_covariance[0][1], propagated_covariance[1][0], propagated_covariance[1][1]);
+
+	float L1, L2;
+	vec2 tv1, tv2;
+    decomposition_2x2_symmetric(Sigma_spatial, L1, L2, tv1, tv2);
+
+	vec3 dp_dx_tangent_space = vec3( sqrt(max(L1, 0.0)) * tv1, 0.0);
+    vec3 dp_dy_tangent_space = vec3( sqrt(max(L2, 0.0)) * tv2, 0.0);
+
+	vec3 dp_dx_world = TBN * dp_dx_tangent_space;
+    vec3 dp_dy_world = TBN * dp_dy_tangent_space;
+
+	vec3 E1 = v1.position - v0.position;
+	vec3 E2 = v2.position - v0.position;
+	vec2 duv1 = v1.texCoord - v0.texCoord;
+	vec2 duv2 = v2.texCoord - v0.texCoord;
+
+	vec3 dp_du_tex;
+    vec3 dp_dv_tex;
+    float A, B_geom, C_geom, invDet_geom;
+    float det_uv = duv1.x * duv2.y - duv1.y * duv2.x;
+
+    if (abs(det_uv) < 1e-4) { 
+        dp_du_tex = T;
+        dp_dv_tex = B;
+        A = 1.0;
+        B_geom = 0.0;
+        C_geom = 1.0;
+        invDet_geom = 1.0;
+    } else {
+        float invDet_uv = 1.0 / det_uv; 
+        vec3 dp_du_obj = invDet_uv * (duv2.y * E1 - duv1.y * E2);
+        vec3 dp_dv_obj = invDet_uv * (-duv2.x * E1 + duv1.x * E2);
+        dp_du_tex = (gl_ObjectToWorldEXT * vec4(dp_du_obj, 0.0)).xyz;
+        dp_dv_tex = (gl_ObjectToWorldEXT * vec4(dp_dv_obj, 0.0)).xyz;
+        A = dot(dp_du_tex, dp_du_tex);
+        B_geom = dot(dp_du_tex, dp_dv_tex);
+        C_geom = dot(dp_dv_tex, dp_dv_tex);
+        invDet_geom = 1.0 / max(A * C_geom - B_geom * B_geom, 1e-7);
+    }
+
+	vec2 ddx = vec2( // (du/dx, dv/dx)
+        invDet_geom * (C_geom * dot(dp_du_tex, dp_dx_world) - B_geom * dot(dp_dv_tex, dp_dx_world)),
+        invDet_geom * (A * dot(dp_dv_tex, dp_dx_world) - B_geom * dot(dp_du_tex, dp_dx_world))
+    );
+    vec2 ddy = vec2( // (du/dy, dv/dy)
+        invDet_geom * (C_geom * dot(dp_du_tex, dp_dy_world) - B_geom * dot(dp_dv_tex, dp_dy_world)),
+        invDet_geom * (A * dot(dp_dv_tex, dp_dy_world) - B_geom * dot(dp_du_tex, dp_dy_world))
+    );
+
+	// 
 	vec4 baseColor = material.baseColor;
 	float metallic = material.metallic;
 	float roughness = material.roughness;
@@ -114,126 +329,82 @@ void main()
 	int normalTex = material.normalTex;
 	int materialTex = material.materialTex;
 
-	if(baseColorTex != -1) baseColor = texture(ImageSamplers[baseColorTex], texCoord);
+	// if(baseColorTex != -1) baseColor = texture(ImageSamplers[baseColorTex], texCoord);
+	if(baseColorTex != -1) baseColor = textureGrad(ImageSamplers[baseColorTex], texCoord, ddx, ddy); 
+
 	if(materialTex != -1) {
-		vec4 textureMaterial = texture(ImageSamplers[materialTex], texCoord);
-		metallic *= textureMaterial.r;
-		roughness *= textureMaterial.g;
+		vec4 textureMaterial = textureGrad(ImageSamplers[materialTex], texCoord, ddx, ddy);
+        metallic *= textureMaterial.b;
+        roughness *= textureMaterial.g;
 	}
 	if(normalTex != -1) {
-		vec3 tangentNormal = texture(ImageSamplers[normalTex], texCoord).rgb * 2.0f - 1.0f;
-
-		vec3 tangent = v0.tangent * barycentrics.x + v1.tangent * barycentrics.y + v2.tangent * barycentrics.z;
-		tangent = normalize(vec3(tangent * gl_WorldToObjectEXT));
-
-		vec3 N = normalize(worldNormal);
-		vec3 T = normalize(tangent);
-		T = normalize(T - dot(T, N) * N);
-		vec3 B = -normalize(cross(N, T));
-		mat3 TBN = mat3(T, B, N);
-
+		vec3 tangentNormal = textureGrad(ImageSamplers[normalTex], texCoord, ddx, ddy).rgb * 2.0f - 1.0f;
 		worldNormal = normalize(TBN * tangentNormal);
 	}
+	Frame frame;
+	initFrame(frame, worldNormal, tangent);
+
+	StandardBSDFParameters params;
+
+	vec3 wiLocal = normalize(toLocal(frame, -normalize(gl_WorldRayDirectionEXT))); // view vector in local space
+	StandardBSDFInit(params, baseColor.rgb, 0.5f, roughness, metallic, wiLocal);
 
 	vec3 Lo = vec3(0.0f);
 
-	vec3 V = -normalize(gl_WorldRayDirectionEXT);
-	vec3 F0 = vec3(0.04f);
-	vec3 diffuseColor = baseColor.rgb * (1.0f - F0) * (1.0f - metallic);
-	vec3 specularColor = mix(F0, baseColor.rgb, metallic);
-
-	if(normal != vec3(0.0f) && instanceData.isAreaLight == 0.0f)
+	// if hit light source, return light color directly
+	if(instanceIsLight(gl_InstanceCustomIndexEXT))
 	{
-		vec3 N = worldNormal;
-		vec3 R = reflect(-V, N);
-		float NdotV = clamp(dot(N, V), 0.0f, 1.0f);
-
-		for(int i = 1; i <= uniformScene.pointLightsCount; i++) 
-		{
-			PointLight light = bufferPointLights.lights[i];
-			vec3 L = normalize(light.position - worldPosition);
-			float d = length(L);
-			L = normalize(L);
-			float NoL = clamp(dot(worldNormal, L), 0.0f, 1.0f);
-
-			vec3 radiance = calcAttenuation(d, light.attenuation) * light.color.rgb;
-
-			vec3 brdf = prd.depth >= 1 ? DiffuseReflectionDisneyEvalWeight(diffuseColor, roughness, N, L, V) : DiffuseReflectionDisneyEvalWeight(diffuseColor, roughness, N, L, V) + SpecularReflectionMicrofacetEvalWeight(specularColor, roughness, N, L, V);
-
-			// Lo += brdf * radiance;
-		}
-
-		for(int i = 1; i <= uniformScene.directionalLightsCount; i++) {
-			DirectionalLight light = bufferDirectionalLights.lights[i];
-			vec3 L = normalize(-light.direction);
-
-			float NoL = clamp(dot(worldNormal, L), 0.0f, 1.0f);
-			vec3 radiance = light.color.rgb;
-
-			vec3 brdf = prd.depth >= 1 ? DiffuseReflectionDisneyEvalWeight(diffuseColor, roughness, N, L, V) : DiffuseReflectionDisneyEvalWeight(diffuseColor, roughness, N, L, V) + SpecularReflectionMicrofacetEvalWeight(specularColor, roughness, N, L, V);
-
-			// Lo += brdf * radiance;
-		}
-
-		//AreaLight: use roughness and sqrt(1-cos_theta) to sample M_texture
-    	vec2 ltcUV = LTC_Coords(NdotV, roughness);
-		
-		vec4 t2 = texture(LTC2, ltcUV); // Get 2 parameters for Fresnel calculation
-
-		mat3 Minv = LTC_Matrix(LTC1, ltcUV);
-		// iterate through all area lights
-		for (int i = 1; i <= uniformScene.areaLightsCount; i++)
-		{
-			AreaLight areaLight = bufferAreaLights.lights[i];
-			vec3 points[4] = {areaLight.points[0].xyz, areaLight.points[1].xyz, areaLight.points[2].xyz, areaLight.points[3].xyz};
-
-			bool isTwoSide = true;
-			vec3 diffuseLTC = LTC_Evaluate(N, V, worldPosition, mat3(1), points, isTwoSide);
-			vec3 specularLTC = LTC_Evaluate(N, V, worldPosition, Minv, points, isTwoSide);
-
-			specularLTC *= specularColor * t2.x + (1.0f - specularColor) * t2.y;
-			vec4 lightColor = areaLight.color;
-
-			// Add contribution
-			Lo += prd.depth >= 1 ? lightColor.rgb * areaLight.intensity * (diffuseColor * diffuseLTC) : lightColor.rgb * areaLight.intensity * (specularLTC + diffuseColor * diffuseLTC);
-			// Lo += lightColor.rgb * areaLight.intensity * (specularLTC + diffuseColor * diffuseLTC);
-
-		}
-
-		if(uniformScene.skyboxLoaded == 1) {
-			vec3 brdfPreIntegrated = texture(samplerBRDF, vec2(NdotV, roughness * roughness)).rgb;
-			vec3 reflection = prefilteredReflection(R, roughness, samplerPrefiltered).rgb;	
-			vec3 specular = reflection * (specularColor * brdfPreIntegrated.r + brdfPreIntegrated.g);
-
-			vec3 irradiance = texture(samplerIrradiance, N).rgb;
-			vec3 diffuseLo = irradiance * diffuseColor * brdfPreIntegrated.b;
-
-			vec3 ambient = (diffuseLo + specular) * 0.2f;
-
-			Lo += diffuseLo;
-		}
-	}
-	else {
-		Lo = baseColor.rgb;
-		prd.diffuseRadiance = Lo;
+		Lo = material.emissiveColor.rgb * material.emissiveIntensity * M_1_PI;
+		prd.radiance = Lo * prd.accBrdf;
 		return;
 	}
 	
-	vec2 Xi = vec2(TinyEncryptionRandom(prd.randomSeed), TinyEncryptionRandom(prd.randomSeed));
+	vec3 u = vec3(TinyEncryptionRandom(prd.randomSeed), TinyEncryptionRandom(prd.randomSeed), TinyEncryptionRandom(prd.randomSeed));
+	bool brdfSampled = false;
+	vec3 wo;
+	float pdf = 0.0f;
+	vec3 weight;
+	brdfSampled = bsdf_sample(params, u, wiLocal, wo, pdf, weight);
 
-	float pdf = 1.0f;
-    vec3 H = localToWorld(sampleGGX_NDF(roughness*roughness, Xi, pdf), worldNormal);
-	float VoH = clamp(dot(V, H), 0.0f, 1.0f);
-	pdf = pdf / (4.0f * VoH);
+	vec3 u_2 = vec3(TinyEncryptionRandom(prd.randomSeed), TinyEncryptionRandom(prd.randomSeed), TinyEncryptionRandom(prd.randomSeed));
 
-	prd.nextOrigin = vec4(worldPosition, 1.0f);
-	prd.nextDir = vec4(normalize(reflect(-V, H)), 0.0f);
+	TriangleLightSample ls;
+	bool lightSampled = sampleLight(u_2, worldPosition, worldNormal, false, ls);
 
-	prd.diffuseRadiance = Lo * prd.accDiffuseBRDF * 0.5f;
-	prd.specularRadiance = Lo * prd.accSpecularBRDF * 0.5f;
+	// nee
+	if(lightSampled)
+	{
+		// shadow ray
+		vec3  origin    = worldPosition;
+		vec3  direction = ls.dir;  // vector to light
+		float tMin      = 0.01f;
+		float tMax      = ls.dist;
 
-	prd.accDiffuseBRDF *= DiffuseReflectionDisneyEval(diffuseColor, roughness, worldNormal, prd.nextDir.xyz, V); // maybe a problity to select diffuse or specular
-	prd.accSpecularBRDF *= SpecularReflectionMicrofacetEvalWeight(specularColor, roughness, worldNormal, prd.nextDir.xyz, V);
+		// Initializes a ray query object but does not start traversal
+		rayQueryEXT rayQuery;
+		rayQueryInitializeEXT(rayQuery, topLevelAS, gl_RayFlagsTerminateOnFirstHitEXT, 0xFF, origin, tMin, direction, tMax);
 
-	prd.done = 0;
+		while(rayQueryProceedEXT(rayQuery)) {}
+
+		if(rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionNoneEXT)
+		{
+			vec3 woLocal = toLocal(frame, ls.dir);
+			float scatterPdf = evalPdf(params, wiLocal, woLocal);
+			vec3 f = eval(params, wiLocal, woLocal);
+			float MISweight = evalMIS(1.0f, ls.pdf, 1.0f, scatterPdf);
+
+			prd.radiance = f * ls.Le * MISweight * prd.accBrdf;
+		}
+	}
+
+	if(brdfSampled)
+	{
+		prd.covariance = reflect_brdf(propagated_covariance, roughness * roughness);
+		prd.nextOrigin = vec4(worldPosition, 1.0f);
+		prd.nextDir = vec4(toWorld(frame, wo), 0.0f);
+
+		prd.accBrdf *= weight;
+		prd.done = 0;
+	}
+
 }

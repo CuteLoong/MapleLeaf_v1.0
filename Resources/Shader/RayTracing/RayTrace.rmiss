@@ -12,10 +12,12 @@ layout(set=0, binding = 5) uniform UniformScene {
 	int pointLightsCount;
 	int directionalLightsCount;
 	int areaLightsCount;
+	int emissiveCount;
+	int emissiveTriangleCount;
 	int skyboxLoaded;
 } uniformScene;
 
-layout(set = 0, binding = 16) uniform samplerCube SkyboxCubeMap;
+layout(set = 0, binding = 18) uniform samplerCube SkyboxCubeMap;
 
 #include <Misc/RayTracingCommon.glsl>
 
@@ -26,10 +28,10 @@ void main()
     if(uniformScene.skyboxLoaded != 0) {
         vec3 rayDirection = gl_WorldRayDirectionEXT;
         vec3 cubemapColour = texture(SkyboxCubeMap, normalize(rayDirection)).rgb;
-        prd.diffuseRadiance = vec3(cubemapColour);
-        // prd.Lo = vec3(cubemapColour) * prd.accBRDF / prd.accPDF;
+        prd.radiance = cubemapColour * prd.accBrdf;
 	    prd.done = 1;
+		return;
     }
-    prd.diffuseRadiance = vec3(0.0, 0.0, 0.0);
-    prd.specularRadiance = vec3(0.0f);
+    prd.radiance = vec3(0.0f);
+	prd.done = 1;
 }

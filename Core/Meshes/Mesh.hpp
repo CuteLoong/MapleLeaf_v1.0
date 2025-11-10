@@ -34,15 +34,13 @@ public:
     void Start() override;
     void Update() override;
 
-    bool CmdRender(const CommandBuffer& commandBuffer, UniformHandler& uniformScene, const Pipeline::Stage& pipelineStage);
-
     static Shader::VertexInput GetVertexInput(uint32_t binding = 0) { return Vertex3D::GetVertexInput(binding); }
 
     const std::shared_ptr<Model> GetModel() const { return model; }
     void                         SetModel(const std::shared_ptr<Model>& model) { this->model = model; }
 
     const std::shared_ptr<Material> GetMaterial() const { return material; }
-    void                            SetMaterial(std::shared_ptr<Material>& material);
+    void                            SetMaterial(std::shared_ptr<Material>& material) { this->material = material; }
 
     uint32_t     GetInstanceId() const { return instanceId; }
     UpdateStatus GetUpdateStatus() const { return updateStatus; }

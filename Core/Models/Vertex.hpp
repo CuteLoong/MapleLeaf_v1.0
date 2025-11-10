@@ -37,7 +37,7 @@ class Vertex3D
 {
 public:
     Vertex3D() = default;
-    Vertex3D(const glm::vec3& position, const glm::vec2& uv, const glm::vec3& normal, const glm::vec3& tangent)
+    Vertex3D(const glm::vec3& position, const glm::vec2& uv, const glm::vec3& normal, const glm::vec4& tangent)
         : position(position)
         , uv(uv)
         , normal(normal)
@@ -51,7 +51,7 @@ public:
             {0, baseBinding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex3D, position)},
             {1, baseBinding, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex3D, uv)},
             {2, baseBinding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex3D, normal)},
-            {3, baseBinding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex3D, tangent)}};
+            {3, baseBinding, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex3D, tangent)}};
         return {bindingDescriptions, attributeDescriptions};
     }
 
@@ -65,8 +65,7 @@ public:
     glm::vec2 padding_2;
     glm::vec3 normal;
     float     padding_3;
-    glm::vec3 tangent;
-    float     padding_4;
+    glm::vec4 tangent;
 };
 }   // namespace MapleLeaf
 

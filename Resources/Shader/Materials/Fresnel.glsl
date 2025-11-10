@@ -33,4 +33,4 @@ float disneyDiffuseFresnel(float NdotV, float NdotL, float LdotH, float roughnes
     return lightScatter * viewScatter;
 }
 
-#endif
+#endif // FRESNEL_GLSL

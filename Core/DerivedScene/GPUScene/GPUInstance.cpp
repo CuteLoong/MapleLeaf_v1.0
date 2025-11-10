@@ -9,6 +9,7 @@ namespace MapleLeaf {
 std::unordered_map<std::shared_ptr<Model>, std::pair<uint32_t, uint32_t>> GPUInstance::modelOffset{};
 std::vector<Vertex3D>                                                     GPUInstance::verticesArray{};
 std::vector<uint32_t>                                                     GPUInstance::indicesArray{};
+uint32_t                                                                  GPUInstance::emissiveCount = 0;
 
 GPUInstance::GPUInstance(Mesh* mesh, uint32_t instanceID, uint32_t materialID)
     : mesh(mesh)
@@ -48,6 +49,27 @@ GPUInstance::GPUInstance(Mesh* mesh, uint32_t instanceID, uint32_t materialID)
     else {
         instanceData.indexOffset  = modelOffset[model].first;
         instanceData.vertexOffset = modelOffset[model].second;
+    }
+
+    if (mesh->GetMaterial()->IsEmissive()) {
+        EmissiveTriangle emissiveTriangle{};
+        const uint32_t   lightIdx = static_cast<uint32_t>(emissiveCount++);
+
+        for (size_t i = 0; i < model->GetIndexCount(); i += 3) {
+            for (size_t j = 0; j < 3; ++j) {
+                const Vertex3D& vertex        = model->GetVertices()[model->GetIndices()[i + j]];
+                emissiveTriangle.posW[j]      = glm::vec4(instanceData.modelMatrix * glm::vec4(vertex.position, 1.0f));
+                emissiveTriangle.texCoords[j] = vertex.uv;
+            }
+            glm::vec3 edge1             = glm::vec3(emissiveTriangle.posW[1]) - glm::vec3(emissiveTriangle.posW[0]);
+            glm::vec3 edge2             = glm::vec3(emissiveTriangle.posW[2]) - glm::vec3(emissiveTriangle.posW[0]);
+            emissiveTriangle.normalW    = glm::normalize(glm::cross(edge1, edge2));
+            emissiveTriangle.area       = 0.5f * glm::length(glm::cross(edge1, edge2));
+            emissiveTriangle.lightIdx   = lightIdx;
+            emissiveTriangle.materialID = materialID;
+
+            emissiveTriangles.push_back(emissiveTriangle);
+        }
     }
 }
 

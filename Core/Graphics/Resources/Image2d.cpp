@@ -152,7 +152,7 @@ void Image2d::Load(std::unique_ptr<Bitmap> loadBitmap)
 {
     if (!filename.empty() && !loadBitmap) {
         loadBitmap = std::make_unique<Bitmap>(filename);
-        format = GetVulkanFormat(loadBitmap->GetFormat());
+        format     = GetVulkanFormat(loadBitmap->GetFormat());
         extent     = {loadBitmap->GetSize().x, loadBitmap->GetSize().y, 1};
         components = loadBitmap->GetComponentCount();
     }
@@ -209,6 +209,22 @@ void Image2d::Load(std::unique_ptr<Bitmap> loadBitmap)
     }
 }
 
+void Image2d::Image2dPipelineBarrierRayTraceToGraphic(const CommandBuffer& commandBuffer, int mipLevel) const
+{
+    InsertImageMemoryBarrier(commandBuffer,
+                             image,
+                             VK_ACCESS_SHADER_WRITE_BIT,
+                             VK_ACCESS_SHADER_READ_BIT,
+                             layout,
+                             layout,
+                             VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                             VK_IMAGE_ASPECT_COLOR_BIT,
+                             1,
+                             mipLevel,
+                             1,
+                             0);
+}
 void Image2d::Image2dPipelineBarrierComputeToCompute(const CommandBuffer& commandBuffer, int mipLevel) const
 {
     InsertImageMemoryBarrier(commandBuffer,

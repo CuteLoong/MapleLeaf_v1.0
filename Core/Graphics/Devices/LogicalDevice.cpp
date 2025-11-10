@@ -18,7 +18,8 @@ const std::vector<const char*> LogicalDevice::DeviceExtensions = {VK_KHR_SWAPCHA
 #ifdef MAPLELEAF_RAY_TRACING
                                                                   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
                                                                   VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-                                                                  VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME
+                                                                  VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+                                                                  VK_KHR_RAY_QUERY_EXTENSION_NAME
 #endif
 };   // VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME
 
@@ -184,10 +185,15 @@ void LogicalDevice::CreateLogicalDevice()
     accelFeature.accelerationStructure = VK_TRUE;
     accelFeature.pNext                 = &bufferDeviceAddressFeatures;
 
+    VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures{};
+    rayQueryFeatures.sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+    rayQueryFeatures.rayQuery = VK_TRUE;
+    rayQueryFeatures.pNext    = &accelFeature;
+
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeature{};
     rayTracingPipelineFeature.sType              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
     rayTracingPipelineFeature.rayTracingPipeline = VK_TRUE;
-    rayTracingPipelineFeature.pNext              = &accelFeature;
+    rayTracingPipelineFeature.pNext              = &rayQueryFeatures;
 #endif
 
     // add bindless feature

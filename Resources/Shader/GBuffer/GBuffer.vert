@@ -15,7 +15,7 @@ layout(set = 0, binding = 1) readonly buffer InstanceDatas
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec3 inNormal;
-layout(location = 3) in vec3 inTangent;
+layout(location = 3) in vec4 inTangent;
 
 layout(location = 0) out vec3 outPosition;
 layout(location = 1) out vec2 outUV;
@@ -35,7 +35,7 @@ void main()
 
     vec4 position = vec4(inPosition, 1.0f);
     vec4 normal = vec4(inNormal, 0.0f);
-    vec4 tangent = vec4(inTangent, 0.0f);
+    vec4 tangent = vec4(inTangent.xyz, 0.0f);
 
     vec4 worldPosition = instanceData.modelMatrix * position;
     mat3 normalMatrix = transpose(inverse(mat3(instanceData.modelMatrix)));

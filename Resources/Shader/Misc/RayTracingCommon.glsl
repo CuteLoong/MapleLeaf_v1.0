@@ -3,15 +3,14 @@
 
 struct HitPayLoad
 {
-    vec3 diffuseRadiance;
+    vec3 radiance;
     int depth;
-    vec3 specularRadiance;
+    vec3 accBrdf;
     int done;
-    vec3 accDiffuseBRDF;
-    uint randomSeed;
-    vec3 accSpecularBRDF;
     vec4 nextOrigin;
     vec4 nextDir;
+    uint randomSeed;
+    mat4 covariance;
 };
 
 #endif // RAY_TRACING_COMMON_GLSL

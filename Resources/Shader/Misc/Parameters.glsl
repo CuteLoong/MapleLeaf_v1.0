@@ -10,18 +10,31 @@ struct Vertex {
     vec2 padding_2;
     vec3 normal;
     float padding_3;
-    vec3 tangent;
-    float padding_4;
+    vec4 tangent;
 };
 
 struct GPUMaterialData
 {
     vec4  baseColor;
+    vec4  emissiveColor;
+    float emissiveIntensity;
+    float specularFactor;
     float metallic;
     float roughness;
     int   baseColorTex;
     int   normalTex;
     int   materialTex;
+    int   emissiveTex;
+};
+
+struct EmissiveTriangle
+{
+    vec4  posW[3];  
+    vec3  normal;
+    float area;
+    vec2  texCoords[3];
+    uint  lightIdx;    
+    uint  materialID;  
 };
 
 struct PointLight {

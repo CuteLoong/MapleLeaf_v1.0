@@ -6,10 +6,6 @@ Model::Model(const std::vector<Vertex3D>& vertices, const std::vector<uint32_t>&
     : Model()
 {
     Initialize(vertices, indices);
-#ifdef MAPLELEAF_RAY_TRACING
-    BindInfoToGPU();
-    InitBLASInput();
-#endif
 }
 
 void Model::BindInfoToGPU()
@@ -40,28 +36,10 @@ void Model::Initialize(const std::vector<Vertex3D>& vertices, const std::vector<
         maxExtents = glm::vec3(std::max(maxExtents.x, position.x), std::max(maxExtents.y, position.y), std::max(maxExtents.z, position.z));
     }
 
-    if (minExtents.x == maxExtents.x || minExtents.y == maxExtents.y || minExtents.z == maxExtents.z) isThin = true;
-    radius = glm::length(maxExtents - minExtents) * 0.5f + 1e-6f;
-
-    // X, -X, Y, -Y, Z, -Z
-    glm::vec3 center = (minExtents + maxExtents) * 0.5f;
-    float     halfX  = radius;   //(maxExtents.x - minExtents.x) * 0.5f;
-    float     halfY  = radius;   //(maxExtents.y - minExtents.y) * 0.5f;
-    float     halfZ  = radius;   //(maxExtents.z - minExtents.z) * 0.5f;
-
-    mappingViews[0] = glm::lookAt(glm::vec3(center.x + halfX, center.y, center.z), center, glm::vec3(0.0f, 1.0f, 0.0f));
-    mappingViews[1] = glm::lookAt(glm::vec3(center.x - halfX, center.y, center.z), center, glm::vec3(0.0f, 1.0f, 0.0f));
-    mappingViews[2] = glm::lookAt(glm::vec3(center.x, center.y + halfY, center.z), center, glm::vec3(0.0f, 0.0f, -1.0f));
-    mappingViews[3] = glm::lookAt(glm::vec3(center.x, center.y - halfY, center.z), center, glm::vec3(0.0f, 0.0f, -1.0f));
-    mappingViews[4] = glm::lookAt(glm::vec3(center.x, center.y, center.z + halfZ), center, glm::vec3(0.0f, 1.0f, 0.0f));
-    mappingViews[5] = glm::lookAt(glm::vec3(center.x, center.y, center.z - halfZ), center, glm::vec3(0.0f, 1.0f, 0.0f));
-
-    mappingOrthos[0] = glm::ortho(-halfZ, halfZ, -halfY, halfY, 0.0f, halfX * 2.0f);
-    mappingOrthos[1] = glm::ortho(-halfZ, halfZ, -halfY, halfY, 0.0f, halfX * 2.0f);
-    mappingOrthos[2] = glm::ortho(-halfX, halfX, -halfZ, halfZ, 0.0f, halfY * 2.0f);
-    mappingOrthos[3] = glm::ortho(-halfX, halfX, -halfZ, halfZ, 0.0f, halfY * 2.0f);
-    mappingOrthos[4] = glm::ortho(-halfX, halfX, -halfY, halfY, 0.0f, halfZ * 2.0f);
-    mappingOrthos[5] = glm::ortho(-halfX, halfX, -halfY, halfY, 0.0f, halfZ * 2.0f);
+#ifdef MAPLELEAF_RAY_TRACING
+    BindInfoToGPU();
+    InitBLASInput();
+#endif
 }
 
 void Model::InitBLASInput()

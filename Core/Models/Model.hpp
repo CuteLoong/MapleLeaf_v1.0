@@ -57,10 +57,8 @@ public:
 
     BLASInput* GetBLASInput() const { return blasInput.get(); }
 
-    const glm::vec3&                GetMinExtents() const { return minExtents; }
-    const glm::vec3&                GetMaxExtents() const { return maxExtents; }
-    const std::array<glm::mat4, 6>& GetMappingViews() const { return mappingViews; }
-    const std::array<glm::mat4, 6>& GetMappingOrthos() const { return mappingOrthos; }
+    const glm::vec3& GetMinExtents() const { return minExtents; }
+    const glm::vec3& GetMaxExtents() const { return maxExtents; }
 
     float              GetWidth() const { return maxExtents.x - minExtents.x; }
     float              GetHeight() const { return maxExtents.y - minExtents.y; }
@@ -94,9 +92,6 @@ private:
 
     glm::vec3 minExtents;
     glm::vec3 maxExtents;
-
-    std::array<glm::mat4, 6> mappingViews;
-    std::array<glm::mat4, 6> mappingOrthos;
 
     float radius = 0.0f;
     bool  isThin = false;

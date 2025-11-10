@@ -4,8 +4,10 @@
 #include "Devices.hpp"
 #include "Files.hpp"
 #include "Light.hpp"
+#include "Maths.hpp"
 #include "SceneGraph.hpp"
 #include "Transform.hpp"
+
 
 #include "assimp/mesh.h"
 #include "assimp/metadata.h"
@@ -40,6 +42,7 @@ static const std::vector<TextureMapping> kTextureMappings[3] = {
     {
         {aiTextureType_DIFFUSE, 0, Material::TextureSlot::BaseColor},
         {aiTextureType_NORMALS, 0, Material::TextureSlot::Normal},
+        {aiTextureType_EMISSIVE, 0, Material::TextureSlot::Emissive},
         // GLTF2 exposes metallic roughness texture.
         {AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, Material::TextureSlot::Material},
     }};
@@ -101,7 +104,7 @@ void AssimpImporter<T>::Import(const std::filesystem::path& path, Builder& build
 
     int removeFlags = aiComponent_COLORS;
     for (uint32_t uvLayer = 1; uvLayer < AI_MAX_NUMBER_OF_TEXTURECOORDS; uvLayer++) removeFlags |= aiComponent_TEXCOORDSn(uvLayer);
-    removeFlags |= aiComponent_TANGENTS_AND_BITANGENTS;
+    removeFlags |= aiComponent_TANGENTS_AND_BITANGENTS;   // We generate tangents using mikktspace
 
     Assimp::Importer importer;
     importer.SetPropertyInteger(AI_CONFIG_PP_RVC_FLAGS, removeFlags);
@@ -206,7 +209,7 @@ std::shared_ptr<T> AssimpImporter<T>::CreateMaterial(ImporterData& data, const a
     }
 
     std::shared_ptr<T> pMaterial;
-    if (importMode == ImportMode::GLTF2) pMaterial = std::make_shared<DefaultMaterial>(Color::White, nullptr, 0, 0);
+    if (importMode == ImportMode::GLTF2) pMaterial = std::make_shared<DefaultMaterial>(Color::White);
     LoadTextures(data, pAiMaterial, searchPath, pMaterial, importMode);
 
     float opacity = 1.0f;
@@ -221,6 +224,23 @@ std::shared_ptr<T> AssimpImporter<T>::CreateMaterial(ImporterData& data, const a
     if (pAiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
         Color diffuse(color.r, color.g, color.b, pMaterial->GetBaseDiffuse().a);
         pMaterial->SetBaseDiffuse(diffuse);
+    }
+
+    // Emissive color and intensity
+    aiColor3D emissive;
+    float     emissiveIntensity;
+    if (pAiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, emissive) == AI_SUCCESS &&
+        pAiMaterial->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissiveIntensity) == AI_SUCCESS) {
+        Color emissiveColor(emissive.r, emissive.g, emissive.b, 1.0f);
+        pMaterial->SetBaseEmissive(emissiveColor);
+        pMaterial->SetEmissiveIntensity(emissiveIntensity);
+        if (emissiveColor != Color::Black) pMaterial->SetEmissive();
+    }
+
+    // Specular factor
+    float specularFactor;
+    if (pAiMaterial->Get(AI_MATKEY_SPECULAR_FACTOR, specularFactor) == AI_SUCCESS) {
+        pMaterial->SetSpecularFactor(specularFactor);
     }
 
     if (importMode == ImportMode::GLTF2) {
@@ -332,52 +352,22 @@ void AssimpImporter<T>::CreateMeshes(ImporterData& data)
             glm::vec3 position = glm::vec3(pAiMesh->mVertices[i].x, pAiMesh->mVertices[i].y, pAiMesh->mVertices[i].z);
             glm::vec3 normal   = glm::vec3(pAiMesh->mNormals[i].x, pAiMesh->mNormals[i].y, pAiMesh->mNormals[i].z);
             glm::vec2 uv       = glm::vec2(0.0f);
-            glm::vec3 tangent  = glm::vec3(0.0f);
+            glm::vec4 tangent  = glm::vec4(0.0f);
             if (pAiMesh->HasTextureCoords(0)) uv = glm::vec2(pAiMesh->mTextureCoords[0][i].x, pAiMesh->mTextureCoords[0][i].y);
-            if (pAiMesh->HasTangentsAndBitangents()) tangent = glm::vec3(pAiMesh->mTangents[i].x, pAiMesh->mTangents[i].y, pAiMesh->mTangents[i].z);
+            // using mikktspace to generate tangents, so we don't read them from assimp
 
             vertexBuffer[i] = std::move(Vertex3D(position, uv, normal, tangent));
         }
 
         if (!pAiMesh->HasTangentsAndBitangents() && pAiMesh->HasTextureCoords(0)) {
-            // Calculate tangents
-            for (uint32_t i = 0; i < indexBuffer.size(); i += 3) {
-                const Vertex3D& v0 = vertexBuffer[indexBuffer[i]];
-                const Vertex3D& v1 = vertexBuffer[indexBuffer[i + 1]];
-                const Vertex3D& v2 = vertexBuffer[indexBuffer[i + 2]];
-
-                glm::vec3 edge1 = v1.position - v0.position;
-                glm::vec3 edge2 = v2.position - v0.position;
-
-                glm::vec2 deltaUV1 = v1.uv - v0.uv;
-                glm::vec2 deltaUV2 = v2.uv - v0.uv;
-
-                float det = deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y;
-                if (std::fabs(det) < 1e-6f) continue;
-
-                float f = 1.0f / det;
-
-                glm::vec3 tangent;
-                tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-                tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-                tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-
-                for (uint32_t j = 0; j < 3; j++) {
-                    vertexBuffer[indexBuffer[i + j]].tangent += tangent;
-                }
-            }
-            for (auto& vertex : vertexBuffer) {
-                if (glm::length(vertex.tangent) < 1e-6f || glm::any(glm::isnan(vertex.tangent))) {
-                    vertex.tangent = glm::vec3(1.0f, 0.0f, 0.0f);
-
-                    if (glm::length(vertex.normal) > 0.0f) {
-                        glm::vec3 temp = glm::cross(vertex.normal, vertex.tangent);
-                        temp           = glm::length(temp) < 1e-6f ? glm::vec3(0.0f, 1.0f, 0.0f) : temp;
-                        vertex.tangent = glm::normalize(glm::cross(temp, vertex.normal));
+            if (MikkTSpaceWrapper::GenerateTangents(vertexBuffer, indexBuffer)) {
+                for (auto& vertex : vertexBuffer) {
+                    if (!glm::any(isnan(vertex.tangent))) {
+                        continue;
                     }
+                    glm::vec3 normal = vertex.normal;
+                    vertex.tangent   = glm::vec4(Maths::perp_stark(normal), 1.0f);
                 }
-                vertex.tangent = glm::normalize(vertex.tangent);
-                vertex.tangent = glm::normalize(vertex.tangent - glm::dot(vertex.tangent, vertex.normal) * vertex.normal);
             }
         }
 

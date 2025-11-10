@@ -27,6 +27,8 @@ void RayTracingSubrender::PostRender(const CommandBuffer& commandBuffer)
     auto gpuScene = Scenes::Get()->GetScene()->GetDerivedScene<GPUScene>();
     if (!gpuScene) return;
 
+    const auto& RayTracingTarget = dynamic_cast<const Image2d*>(Graphics::Get()->GetAttachment("RayTracingTarget"));
+
     const auto& skybox      = Scenes::Get()->GetScene()->GetSystem<SkyboxSystem>();
     const auto& lightSystem = Scenes::Get()->GetScene()->GetSystem<LightSystem>();
     const auto& AS          = Scenes::Get()->GetScene()->GetDerivedScene<ASScene>()->GetTopLevelAccelerationStruct();
@@ -39,8 +41,9 @@ void RayTracingSubrender::PostRender(const CommandBuffer& commandBuffer)
     uniformScene.Push("pointLightsCount", lightSystem->GetPointLightsCount() - 1);
     uniformScene.Push("directionalLightsCount", lightSystem->GetDirectionalLightsCount() - 1);
     uniformScene.Push("areaLightsCount", lightSystem->GetAreaLightsCount() - 1);
+    uniformScene.Push("emissiveTriangleCount", int(gpuScene->GetEmissiveTriangleCount()));
+    uniformScene.Push("emissiveCount", int(gpuScene->GetEmissiveCount()));
     uniformScene.Push("skyboxLoaded", int(skybox->IsLoaded()));
-    uniformScene.Push("wallroughness", wallroughness);
 
     uniformGeometry.Push("vertexAddress", gpuScene->GetVertexBuffer()->GetDeviceAddress());
     uniformGeometry.Push("indexAddress", gpuScene->GetIndexBuffer()->GetDeviceAddress());
@@ -54,9 +57,11 @@ void RayTracingSubrender::PostRender(const CommandBuffer& commandBuffer)
     descriptorSet.Push("uniformGeometry", uniformGeometry);
     descriptorSet.Push("uniformScene", uniformScene);
     descriptorSet.Push("camera", uniformCamera);
+    descriptorSet.Push("emissiveIDs", gpuScene->GetEmissiveIDBuffer());
     descriptorSet.Push("bufferPointLights", lightSystem->GetStoragePointLights());
     descriptorSet.Push("bufferDirectionalLights", lightSystem->GetStorageDirectionalLights());
     descriptorSet.Push("bufferAreaLights", lightSystem->GetStorageAreaLights());
+    descriptorSet.Push("emissiveTriangleDatas", gpuScene->GetEmissiveTriangleBuffer());
 
     if (skybox->IsLoaded()) {
         descriptorSet.Push("SkyboxCubeMap", skybox->GetSkybox());
@@ -76,21 +81,21 @@ void RayTracingSubrender::PostRender(const CommandBuffer& commandBuffer)
 
     gpuScene->PushDescriptors(descriptorSet);
 
-    descriptorSet.Push("image", Graphics::Get()->GetAttachment("RayTracingTarget"));
+    descriptorSet.Push("image", RayTracingTarget);
 
     if (!descriptorSet.Update(pipelineRayTracing)) return;
 
     pipelineRayTracing.BindPipeline(commandBuffer);
     descriptorSet.BindDescriptor(commandBuffer, pipelineRayTracing);
     pipelineRayTracing.CmdRender(commandBuffer, Devices::Get()->GetWindow()->GetSize());
+
+    RayTracingTarget->Image2dPipelineBarrierRayTraceToGraphic(commandBuffer);
 }
 
 void RayTracingSubrender::RegisterImGui()
 {
     if (auto* imgui = Imgui::Get()) {
         imgui->RegisterCustomWindow(typeid(*this).name(), [this]() {
-            ImGui::SliderFloat("Wall Roughness", &wallroughness, 0.0f, 1.0f);
-
             ImGui::SetNextItemWidth(100.0f);
             ImGui::InputInt("Samples Per Pixel", &spp);
             ImGui::InputInt("Max Depth", &maxDepth);

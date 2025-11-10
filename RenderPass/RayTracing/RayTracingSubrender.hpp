@@ -25,8 +25,7 @@ private:
     UniformHandler     uniformCamera;
     DescriptorsHandler descriptorSet;
 
-    float wallroughness = 0.5f;
-    int   spp           = 128;
-    int   maxDepth      = 5;
+    int spp      = 1;
+    int maxDepth = 1;
 };
 }   // namespace MapleLeaf

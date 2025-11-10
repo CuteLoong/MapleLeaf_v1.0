@@ -42,9 +42,13 @@ public:
 
     const StorageBuffer* GetInstanceDatasHandler() const { return instancesBuffer.get(); }
     const StorageBuffer* GetMaterialDatasHandler() const { return materialsBuffer.get(); }
+    const StorageBuffer* GetEmissiveIDBuffer() const { return emissiveIDBuffer.get(); }
+    const StorageBuffer* GetEmissiveTriangleBuffer() const { return emissiveTrianglesBuffer.get(); }
 
     const IndirectBuffer* GetIndirectBuffer() const { return drawCullingIndirectBuffer.get(); }
 
+    uint32_t     GetEmissiveCount() const { return emissiveIDArray.size(); }
+    uint32_t     GetEmissiveTriangleCount() const { return emissiveTrianglesDatas.size(); }
     uint32_t     GetInstanceCount() const { return instances.size(); }
     UpdateStatus GetUpdateStatus() const { return updateStatus; }
 
@@ -52,14 +56,19 @@ private:
     std::vector<GPUInstance> instances;
     std::vector<GPUMaterial> materials;
 
-    std::unique_ptr<Buffer>                   vertexBuffer;
-    std::unique_ptr<Buffer>                   indexBuffer;
-    std::vector<GPUInstance::InstanceData>    instancesDatas;
-    std::vector<GPUMaterial::MaterialData>    materialsDatas;
-    std::vector<VkDrawIndexedIndirectCommand> drawAllMeshCommands;
+    std::vector<int> emissiveIDArray;
+
+    std::unique_ptr<Buffer>                    vertexBuffer;
+    std::unique_ptr<Buffer>                    indexBuffer;
+    std::vector<GPUInstance::InstanceData>     instancesDatas;
+    std::vector<GPUMaterial::MaterialData>     materialsDatas;
+    std::vector<GPUInstance::EmissiveTriangle> emissiveTrianglesDatas;
+    std::vector<VkDrawIndexedIndirectCommand>  drawAllMeshCommands;
 
     std::unique_ptr<StorageBuffer> instancesBuffer;
     std::unique_ptr<StorageBuffer> materialsBuffer;
+    std::unique_ptr<StorageBuffer> emissiveTrianglesBuffer;
+    std::unique_ptr<StorageBuffer> emissiveIDBuffer;
 
     std::unique_ptr<IndirectBuffer> drawCullingIndirectBuffer;
     std::unique_ptr<IndirectBuffer> drawAllMeshIndirectBuffer;

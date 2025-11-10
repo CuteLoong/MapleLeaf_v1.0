@@ -11,7 +11,7 @@ class Image2d : public Image
 public:
     static std::shared_ptr<Image2d> Create(const std::filesystem::path& filename, VkFilter filter = VK_FILTER_LINEAR,
                                            VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT, bool anisotropic = true,
-                                           bool mipmap = false);
+                                           bool mipmap = true);
 
     /**
      * Creates a new 2D image.
@@ -65,6 +65,7 @@ public:
     void CopyImage2d(const CommandBuffer& commandBuffer, const Image2d& image2d, int mipLevel = 0) const;
     void ClearImage2d(const CommandBuffer& commandBuffer, const glm::vec4& color) const;
 
+    void Image2dPipelineBarrierRayTraceToGraphic(const CommandBuffer& commandBuffer, int mipLevel = 0) const;
     void Image2dPipelineBarrierComputeToCompute(const CommandBuffer& commandBuffer, int mipLevel = 0) const;
     void Image2dPipelineBarrierComputeToGraphic(const CommandBuffer& commandBuffer, int mipLevel = 0) const;
     void Image2dPipelineBarrierGraphicToCompute(const CommandBuffer& commandBuffer, int mipLevel = 0) const;

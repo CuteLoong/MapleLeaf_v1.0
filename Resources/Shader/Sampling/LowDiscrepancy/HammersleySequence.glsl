@@ -11,17 +11,21 @@ float radicalInverse(uint i)
     return float(i) * 2.3283064365386963e-10f;
 }
 
-uint HaltonSequence(uint Index, uint base)
+float HaltonSequence(uint i, uint base)
 {
-	uint result = 0;
-	uint f = 1;
-	uint i = Index;
-	
-	while (i > 0) {
-		result += (f / base) * (i % base);
-		i = uint(floor(i / base));
-	}
-	return result;
+    float result = 0.0;
+    float f = 1.0;
+    
+    while (i > 0u) 
+    {
+        f = f / float(base); 
+        
+        result += float(i % base) * f;
+        
+        i = i / base;
+    }
+    
+    return result;
 }
 
 vec2 getHammersley(uint i, uint N)

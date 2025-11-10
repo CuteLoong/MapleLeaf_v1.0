@@ -29,12 +29,15 @@ void GPUScene::Start()
 
     for (const auto& mesh : meshes) {
         const auto& material = mesh->GetMaterial();
-        instances.push_back(GPUInstance(mesh, mesh->GetInstanceId(), GPUMaterial::GetMaterialID(material).value()));
-    }
+        GPUInstance instance(mesh, mesh->GetInstanceId(), GPUMaterial::GetMaterialID(material).value());
 
-    for (auto& instance : instances) {
+        instances.push_back(instance);
         instancesDatas.push_back(instance.GetInstanceData());
+        emissiveTrianglesDatas.insert(emissiveTrianglesDatas.end(), instance.emissiveTriangles.begin(), instance.emissiveTriangles.end());
+
         drawAllMeshCommands.push_back(instance.GetDrawIndexedIndirectCommand());
+
+        if (mesh->GetMaterial()->IsEmissive()) emissiveIDArray.push_back(mesh->GetInstanceId());
     }
 
     for (auto& material : materials) {
@@ -47,6 +50,10 @@ void GPUScene::Start()
 
     instancesBuffer = std::make_unique<StorageBuffer>(sizeof(GPUInstance::InstanceData) * instancesDatas.size(), instancesDatas.data());
     materialsBuffer = std::make_unique<StorageBuffer>(sizeof(GPUMaterial::MaterialData) * materialsDatas.size(), materialsDatas.data());
+    if (!emissiveIDArray.empty()) emissiveIDBuffer = std::make_unique<StorageBuffer>(sizeof(int) * emissiveIDArray.size(), emissiveIDArray.data());
+    if (!emissiveTrianglesDatas.empty())
+        emissiveTrianglesBuffer =
+            std::make_unique<StorageBuffer>(sizeof(GPUInstance::EmissiveTriangle) * emissiveTrianglesDatas.size(), emissiveTrianglesDatas.data());
 
     drawCullingIndirectBuffer = std::make_unique<IndirectBuffer>(instances.size() * sizeof(VkDrawIndexedIndirectCommand), nullptr, true);
     drawAllMeshIndirectBuffer =
@@ -85,6 +92,9 @@ void GPUScene::Update()
         SetVertices(GPUInstance::verticesArray);
         instancesBuffer->Update(instancesDatas.data(), sizeof(GPUInstance::InstanceData) * instancesDatas.size());
         materialsBuffer->Update(materialsDatas.data(), sizeof(GPUMaterial::MaterialData) * materialsDatas.size());
+        if (!emissiveIDArray.empty()) emissiveIDBuffer->Update(emissiveIDArray.data(), sizeof(int) * emissiveIDArray.size());
+        if (!emissiveTrianglesDatas.empty())
+            emissiveTrianglesBuffer->Update(emissiveTrianglesDatas.data(), sizeof(GPUInstance::EmissiveTriangle) * emissiveTrianglesDatas.size());
         drawCullingIndirectBuffer->Update(drawAllMeshCommands.data(), drawAllMeshCommands.size() * sizeof(VkDrawIndexedIndirectCommand));
         drawAllMeshIndirectBuffer->Update(drawAllMeshCommands.data(), drawAllMeshCommands.size() * sizeof(VkDrawIndexedIndirectCommand));
         updateStatus = UpdateStatus::AllChanged;
@@ -92,6 +102,9 @@ void GPUScene::Update()
     case GPUInstance::Status::MatrixChanged:
         instancesBuffer->Update(instancesDatas.data(), sizeof(GPUInstance::InstanceData) * instancesDatas.size());
         materialsBuffer->Update(materialsDatas.data(), sizeof(GPUMaterial::MaterialData) * materialsDatas.size());
+        if (!emissiveIDArray.empty()) emissiveIDBuffer->Update(emissiveIDArray.data(), sizeof(int) * emissiveIDArray.size());
+        if (!emissiveTrianglesDatas.empty())
+            emissiveTrianglesBuffer->Update(emissiveTrianglesDatas.data(), sizeof(GPUInstance::EmissiveTriangle) * emissiveTrianglesDatas.size());
         updateStatus = UpdateStatus::InstanceChanged;
         break;
     case GPUInstance::Status::None: updateStatus = UpdateStatus::NoneChanged; break;

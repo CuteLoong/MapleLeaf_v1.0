@@ -17,12 +17,16 @@ GPUMaterial::GPUMaterial(const std::shared_ptr<Material>& material)
     : material(material)
 {
     if (const DefaultMaterial* defaultMaterial = dynamic_cast<const DefaultMaterial*>(material.get())) {
-        materialData.baseColor    = defaultMaterial->GetBaseDiffuse();
-        materialData.roughness    = defaultMaterial->GetRoughness();
-        materialData.metalic      = defaultMaterial->GetMetallic();
-        materialData.baseColorTex = -1;
-        materialData.normalTex    = -1;
-        materialData.materialTex  = -1;
+        materialData.baseColor         = defaultMaterial->GetBaseDiffuse();
+        materialData.emissiveColor     = defaultMaterial->GetBaseEmissive();
+        materialData.specularFactor    = defaultMaterial->GetSpecularFactor();
+        materialData.roughness         = defaultMaterial->GetRoughness();
+        materialData.metallic          = defaultMaterial->GetMetallic();
+        materialData.emissiveIntensity = defaultMaterial->GetEmissiveIntensity();
+        materialData.baseColorTex      = -1;
+        materialData.normalTex         = -1;
+        materialData.materialTex       = -1;
+        materialData.emissiveTex       = -1;
 
         if (const auto& diffuseImage = defaultMaterial->GetImageDiffuse()) {
             if (const auto& it = std::find(images.begin(), images.end(), diffuseImage); it != images.end()) {
@@ -51,6 +55,16 @@ GPUMaterial::GPUMaterial(const std::shared_ptr<Material>& material)
             else {
                 materialData.materialTex = images.size();
                 images.push_back(materialImage);
+            }
+        }
+
+        if (const auto& emissiveImage = defaultMaterial->GetImageEmissive()) {
+            if (const auto& it = std::find(images.begin(), images.end(), emissiveImage); it != images.end()) {
+                materialData.emissiveTex = static_cast<int32_t>(std::distance(images.begin(), it));
+            }
+            else {
+                materialData.emissiveTex = images.size();
+                images.push_back(emissiveImage);
             }
         }
     }

@@ -11,14 +11,15 @@ public:
     struct MaterialData
     {
         Color   baseColor;
-        float   metalic;
+        Color   emissiveColor;
+        float   emissiveIntensity;
+        float   specularFactor;
+        float   metallic;
         float   roughness;
         int32_t baseColorTex;
         int32_t normalTex;
         int32_t materialTex;
-        int32_t padding1;
-        int32_t padding2;
-        int32_t padding3;
+        int32_t emissiveTex;
     };
 
     GPUMaterial() = default;

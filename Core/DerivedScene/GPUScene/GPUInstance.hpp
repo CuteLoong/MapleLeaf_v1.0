@@ -33,6 +33,16 @@ public:
         uint32_t  padding1;
     };
 
+    struct EmissiveTriangle
+    {
+        glm::vec4 posW[3];
+        glm::vec3 normalW;
+        float     area;
+        glm::vec2 texCoords[3];
+        uint32_t  lightIdx;
+        uint32_t  materialID;
+    };
+
     GPUInstance() = default;
 
     explicit GPUInstance(Mesh* mesh, uint32_t instanceID, uint32_t materialID);
@@ -57,11 +67,13 @@ private:
     std::shared_ptr<Model> model;
     Status                 instanceStatus;
 
-    InstanceData instanceData;
+    InstanceData                  instanceData;
+    std::vector<EmissiveTriangle> emissiveTriangles;
 
     // offset first is indexOffset, offset second is vertexOffset
     static std::unordered_map<std::shared_ptr<Model>, std::pair<uint32_t, uint32_t>> modelOffset;
     static std::vector<Vertex3D>                                                     verticesArray;
     static std::vector<uint32_t>                                                     indicesArray;
+    static uint32_t                                                                  emissiveCount;
 };
 }   // namespace MapleLeaf
